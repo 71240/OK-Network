@@ -1,0 +1,26 @@
+// Major Hospitals in Oklahoma (well-lit, 24/7 security, generally safe parking)
+const hospitalLocations = [
+    { name: "OU Medical Center - Oklahoma City", lat: 35.4766, lng: -97.4989, city: "Oklahoma City", category: "Hospital" },
+    { name: "Mercy Hospital - Oklahoma City", lat: 35.5387, lng: -97.5783, city: "Oklahoma City", category: "Hospital" },
+    { name: "Integris Baptist Medical Center - OKC", lat: 35.5442, lng: -97.5578, city: "Oklahoma City", category: "Hospital" },
+    { name: "Saint Francis Hospital - Tulsa", lat: 36.0258, lng: -95.9289, city: "Tulsa", category: "Hospital" },
+    { name: "St. John Medical Center - Tulsa", lat: 36.1527, lng: -95.9694, city: "Tulsa", category: "Hospital" },
+    { name: "Norman Regional Hospital - Norman", lat: 35.2203, lng: -97.4489, city: "Norman", category: "Hospital" },
+    { name: "Comanche County Hospital - Lawton", lat: 34.6086, lng: -98.3903, city: "Lawton", category: "Hospital" },
+    { name: "Stillwater Medical Center - Stillwater", lat: 36.1156, lng: -97.0586, city: "Stillwater", category: "Hospital" },
+    { name: "Southwestern Medical Center - Lawton", lat: 34.6086, lng: -98.3903, city: "Lawton", category: "Hospital" },
+    { name: "Hillcrest Medical Center - Tulsa", lat: 36.1527, lng: -95.9694, city: "Tulsa", category: "Hospital" },
+    { name: "Integris Canadian Valley - Yukon", lat: 35.5069, lng: -97.7625, city: "Yukon", category: "Hospital" },
+    { name: "Mercy Hospital - Ada", lat: 34.7745, lng: -96.6783, city: "Ada", category: "Hospital" },
+    { name: "McAlester Regional Hospital - McAlester", lat: 34.9331, lng: -95.7698, city: "McAlester", category: "Hospital" },
+    { name: "Baptist Medical Center - Enid", lat: 36.3999, lng: -97.8762, city: "Enid", category: "Hospital" },
+    { name: "St. Mary's Hospital - Enid", lat: 36.3999, lng: -97.8762, city: "Enid", category: "Hospital" },
+    { name: "Northeastern Health System - Tahlequah", lat: 35.9153, lng: -94.972, city: "Tahlequah", category: "Hospital" },
+    { name: "Ardmore Hospital - Ardmore", lat: 34.1833, lng: -97.1333, city: "Ardmore", category: "Hospital" },
+    { name: "Duncan Regional Hospital - Duncan", lat: 34.5023, lng: -97.9579, city: "Duncan", category: "Hospital" },
+    { name: "Bartlesville Hospital - Bartlesville", lat: 36.7473, lng: -95.9808, city: "Bartlesville", category: "Hospital" },
+    { name: "Woodward Hospital - Woodward", lat: 36.4336, lng: -99.3904, city: "Woodward", category: "Hospital" },
+    { name: "Weatherford Hospital - Weatherford", lat: 35.5262, lng: -98.7075, city: "Weatherford", category: "Hospital" },
+    { name: "Elk City Hospital - Elk City", lat: 35.4117, lng: -99.4042, city: "Elk City", category: "Hospital" },
+    { name: "Muskogee Hospital - Muskogee", lat: 35.7479, lng: -95.3697, city: "Muskogee", category: "Hospital" }
+];
