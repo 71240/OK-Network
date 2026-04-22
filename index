@@ -3,490 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>OK Safe Parking Network</title>
+    <title>OK Safe Parking Network • Complete Map</title>
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        }
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #1a2a1f;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            max-width: 1400px;
-            width: 100%;
-            background: #f5f3e8;
-            border-radius: 32px;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .header {
-            background: #2c5e2e;
-            color: white;
-            padding: 16px 24px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .logo-img {
-            height: 45px;
-            width: auto;
-        }
-        h1 {
-            margin: 0;
-            font-size: 1.6rem;
-        }
-        .sub {
-            font-style: italic;
-            opacity: 0.9;
-            font-size: 0.85rem;
-        }
-        .user-area {
-            background: #1f3b20;
-            padding: 8px 16px;
-            border-radius: 60px;
-            display: flex;
-            gap: 12px;
-            align-items: baseline;
-            flex-wrap: wrap;
-        }
-        .username-display {
-            font-weight: bold;
-            background: #e9b35f;
-            color: #1e2a1a;
-            padding: 5px 12px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-        }
-        .change-name-btn {
-            background: #f5bc70;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .map-container {
-            height: 450px;
-            width: 100%;
-            border-bottom: 4px solid #c0a76b;
-        }
-        #map {
-            height: 100%;
-            width: 100%;
-            background: #c8e0d0;
-        }
-        .location-panel {
-            padding: 20px;
-            background: #fffdf7;
-        }
-        .location-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 10px;
-        }
-        .vote-buttons {
-            display: flex;
-            gap: 20px;
-            margin: 15px 0;
-        }
-        .thumbs {
-            background: #eee;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 60px;
-            cursor: pointer;
-            transition: 0.1s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        .thumbs img {
-            width: 32px;
-            height: 32px;
-        }
-        .thumbs-up {
-            background: #c8e6d9;
-            color: #1b5e2a;
-        }
-        .thumbs-down {
-            background: #ffe0e0;
-            color: #9a2e2e;
-        }
-        .score {
-            font-size: 1.3rem;
-            margin-left: 10px;
-            background: #2c5e2e20;
-            padding: 5px 12px;
-            border-radius: 40px;
-        }
-        .comments-section {
-            margin-top: 20px;
-            background: #f9f6ed;
-            padding: 15px;
-            border-radius: 24px;
-        }
-        .comment-list {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            background: white;
-            padding: 10px;
-            border-radius: 20px;
-        }
-        .comment-item {
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
-        }
-        .comment-header {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            margin-bottom: 5px;
-        }
-        .comment-name {
-            font-weight: bold;
-            color: #2c5e2e;
-        }
-        .comment-time {
-            font-size: 0.7rem;
-            color: gray;
-        }
-        .old-comment-warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 5px 8px;
-            margin-top: 5px;
-            font-size: 0.75rem;
-        }
-        .add-comment {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        .add-comment input {
-            flex: 3;
-            padding: 10px;
-            border-radius: 40px;
-            border: 1px solid #ccc;
-        }
-        .add-comment button {
-            background: #2c5e2e;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .user-spot-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #e8f0fe;
-            border-radius: 24px;
-            border: 2px dashed #2c5e2e;
-        }
-        .user-spot-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        .user-spot-form input {
-            padding: 8px;
-            border-radius: 20px;
-            border: 1px solid #ccc;
-            flex: 1;
-            min-width: 150px;
-        }
-        .user-spot-form button {
-            background: #2c5e2e;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .export-btn {
-            background: #4a6fa5;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 30px;
-            margin: 10px 20px 20px auto;
-            display: block;
-            cursor: pointer;
-        }
-        .warning {
-            background: #fff1c1;
-            padding: 8px;
-            border-radius: 20px;
-            margin: 10px 20px;
-            text-align: center;
-            font-size: 0.8rem;
-        }
-        footer {
-            font-size: 0.7rem;
-            text-align: center;
-            padding: 15px;
-            color: #4a4a3a;
-        }
-        .sync-status {
-            font-size: 0.7rem;
-            background: #2c5e2e40;
-            padding: 4px 12px;
-            border-radius: 20px;
-            display: inline-block;
-        }
-        @media (max-width: 700px) {
-            .location-title { font-size: 1.3rem; }
-            .thumbs { padding: 5px 12px; }
-            .thumbs img { width: 24px; height: 24px; }
-        }
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { margin: 0; padding: 20px; background: #1a2a1f; display: flex; justify-content: center; }
+        .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 32px; overflow: hidden; }
+        .header { background: #2c5e2e; color: white; padding: 16px 24px; display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        h1 { margin: 0; font-size: 1.6rem; }
+        .sub { font-style: italic; opacity: 0.9; font-size: 0.85rem; }
+        .user-area { background: #1f3b20; padding: 8px 16px; border-radius: 60px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+        .username-display { background: #e9b35f; color: #1e2a1a; padding: 5px 12px; border-radius: 40px; font-weight: bold; }
+        .change-name-btn, .admin-btn { background: #f5bc70; border: none; padding: 5px 12px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .admin-btn { background: #ffaa44; margin-left: 8px; }
+        .map-container { height: 550px; width: 100%; }
+        #map { height: 100%; width: 100%; background: #c8e0d0; }
+        .location-panel { padding: 20px; background: #fffdf7; max-height: 500px; overflow-y: auto; }
+        .location-title { font-size: 1.4rem; font-weight: bold; display: flex; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid #ddd; padding-bottom: 10px; align-items: center; }
+        .vote-buttons { display: flex; gap: 20px; margin: 15px 0; }
+        .thumbs { background: #eee; border: none; padding: 10px 20px; border-radius: 60px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .thumbs-up { background: #c8e6d9; }
+        .thumbs-down { background: #ffe0e0; }
+        .score { font-size: 1rem; background: #2c5e2e20; padding: 5px 12px; border-radius: 40px; }
+        .comments-section { margin-top: 20px; padding: 15px; background: #f9f6ed; border-radius: 24px; }
+        .comment-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; background: white; padding: 10px; border-radius: 20px; }
+        .comment-item { border-bottom: 1px solid #ddd; padding: 10px; }
+        .comment-header { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 5px; }
+        .comment-name { font-weight: bold; color: #2c5e2e; }
+        .comment-time { font-size: 0.7rem; color: gray; }
+        .add-comment { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .add-comment input { flex: 3; padding: 10px; border-radius: 40px; border: 1px solid #ccc; }
+        .add-comment button { background: #2c5e2e; color: white; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; }
+        .user-spot-section { margin-top: 20px; padding: 15px; background: #e8f0fe; border-radius: 24px; border: 2px dashed #2c5e2e; }
+        .user-spot-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .user-spot-form input { padding: 8px; border-radius: 20px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
+        .user-spot-form button { background: #2c5e2e; color: white; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        .admin-panel { background: #fff1d6; margin-top: 15px; border-radius: 24px; padding: 12px; border: 1px solid #e0b354; }
+        .pending-item { background: white; padding: 8px 12px; margin: 8px 0; border-radius: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.8rem; }
+        .approve-btn { background: #2c5e2e; color: white; border: none; padding: 5px 12px; border-radius: 30px; cursor: pointer; }
+        .reject-btn { background: #9e2d2d; color: white; border: none; padding: 5px 12px; border-radius: 30px; cursor: pointer; }
+        .export-btn { background: #4a6fa5; color: white; border: none; padding: 8px 16px; border-radius: 30px; margin: 10px 20px 20px auto; display: block; cursor: pointer; }
+        .warning { background: #fff1c1; padding: 8px; border-radius: 20px; margin: 10px 20px; text-align: center; font-size: 0.8rem; }
+        footer { font-size: 0.7rem; text-align: center; padding: 15px; color: #4a4a3a; }
+        .sync-indicator { position: fixed; bottom: 20px; right: 20px; background: #2c5e2e; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; z-index: 1000; }
+        .stats-bar { background: #2c5e2e20; padding: 8px 20px; display: flex; gap: 20px; font-size: 0.75rem; justify-content: space-between; flex-wrap: wrap; }
+        .category-filter { padding: 10px 20px; background: white; border-bottom: 1px solid #ddd; display: flex; gap: 6px; flex-wrap: wrap; max-height: 120px; overflow-y: auto; }
+        .filter-btn { background: #e0e0e0; border: none; padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 0.7rem; }
+        .filter-btn.active { background: #2c5e2e; color: white; }
+        @media (max-width: 700px) { .location-title { font-size: 1.1rem; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <div class="logo-area">
-            <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
-            <div>
-                <h1>🌙 OK Safe Parking Network</h1>
-                <div class="sub">Live community votes • syncs for everyone</div>
-            </div>
+            <div><h1>🌙 OK Safe Parking Network</h1><div class="sub">Complete map • 200+ locations • Community-rated</div></div>
         </div>
         <div class="user-area">
-            <span>👤 You are:</span>
+            <span>👤</span>
             <span id="usernameSpan" class="username-display">loading...</span>
-            <button id="changeNameBtn" class="change-name-btn">🎭 Change name</button>
+            <button id="changeNameBtn" class="change-name-btn">Change name</button>
+            <button id="adminToggleBtn" class="admin-btn">🔐 Admin</button>
         </div>
     </div>
-    <div class="map-container">
-        <div id="map"></div>
-    </div>
+    <div class="stats-bar" id="statsBar">Loading locations...</div>
+    <div class="category-filter" id="categoryFilter"></div>
+    <div class="map-container"><div id="map"></div></div>
     <div class="location-panel">
-        <div class="location-title">
-            <span id="selectedPlaceName">Select a marker</span>
-            <span id="voteScore" class="score"></span>
-        </div>
+        <div class="location-title"><span id="selectedPlaceName">Select a marker</span><span id="voteScore" class="score"></span></div>
         <div class="vote-buttons">
-            <button id="thumbUpBtn" class="thumbs thumbs-up"><img src="ThumbsUp.png" alt="👍" onerror="this.src='https://cdn-icons-png.flaticon.com/512/190/190411.png'"> Yes (safe)</button>
-            <button id="thumbDownBtn" class="thumbs thumbs-down"><img src="ThumbsDown.png" alt="👎" onerror="this.src='https://cdn-icons-png.flaticon.com/512/190/190417.png'"> No (risky)</button>
+            <button id="thumbUpBtn" class="thumbs thumbs-up">👍 Safe overnight</button>
+            <button id="thumbDownBtn" class="thumbs thumbs-down">👎 Not safe / risky</button>
         </div>
-        
         <div class="comments-section">
-            <strong>💬 Community comments</strong>
-            <div id="commentList" class="comment-list">Loading comments...</div>
+            <strong>💬 Community Reports</strong>
+            <div id="commentList" class="comment-list">Loading...</div>
             <div class="add-comment">
-                <input type="text" id="commentInput" placeholder="Share your overnight experience..." maxlength="200">
-                <button id="postCommentBtn">Post comment</button>
+                <input type="text" id="commentInput" placeholder="Share your experience..." maxlength="200">
+                <button id="postCommentBtn">Post</button>
             </div>
         </div>
-        
         <div class="user-spot-section">
-            <strong>📍 Add a new safe spot</strong>
+            <strong>📍 Missed a spot? Add it</strong>
             <div class="user-spot-form">
-                <input type="text" id="newSpotName" placeholder="Place name (e.g., 'Love's - Exit 123')">
-                <input type="text" id="newSpotDesc" placeholder="Description (optional)">
-                <button id="addSpotBtn">➕ Add my location</button>
+                <input type="text" id="newSpotName" placeholder="Business name">
+                <input type="text" id="newSpotDesc" placeholder="Address / notes">
+                <button id="addSpotBtn">➕ Suggest (needs approval)</button>
             </div>
-            <small style="color: #666;">⚠️ Click the map where you want to add the spot first</small>
+            <small>Click on map where the spot is located first</small>
+        </div>
+        <div id="adminPanel" class="admin-panel" style="display:none;">
+            <strong>🛠 Admin: Pending spots</strong>
+            <div id="pendingList">No pending submissions.</div>
         </div>
     </div>
-    <button id="exportCsvBtn" class="export-btn">📎 Download CSV snapshot</button>
-    <div class="warning">
-        ⚠️ Not legal advice. Always check local signs. Votes & spots save to cloud — everyone sees updates.
-    </div>
-    <footer>❤️ Anonymous • No login needed • Data syncs via JSONBin.io • Be safe out there</footer>
+    <button id="exportCsvBtn" class="export-btn">📎 Download CSV Report</button>
+    <div class="warning">⚠️ Always check local signs. These are potential overnight parking spots - policies change. Be respectful and safe.</div>
+    <footer>Anonymous • Names saved locally • All data shared across users • Community-rated</footer>
 </div>
+<div id="syncStatus" class="sync-indicator">🟢 Live</div>
+
+<!-- Location Data Files -->
+<script src="locations/walmarts.js"></script>
+<script src="locations/crackerbarrel.js"></script>
+<script src="locations/loves.js"></script>
+<script src="locations/pilot.js"></script>
+<script src="locations/casinos.js"></script>
+<script src="locations/hospitals.js"></script>
+<script src="locations/gyms.js"></script>
+<script src="locations/restareas.js"></script>
 
 <script>
-    // ============================================================
-    // YOUR JSONBIN.IO CREDENTIALS (already pasted)
-    // ============================================================
     const JSONBIN_BIN_ID = "69e921d136566621a8df20c8";
     const JSONBIN_API_KEY = "$2a$10$pc9P7XGCOIL7n0.XPQs94eFWfy8LyNKP2d8flF55jf6Tkrli4hUXW";
     
-    // ============================================================
-    // OKLAHOMA LOCATIONS (16 spots)
-    // ============================================================
-    const defaultLocations = [
-        { id: "walmart_okc1", name: "Walmart Supercenter - OKC", lat: 35.4676, lng: -97.5164, category: "Walmart", isUserSpot: false },
-        { id: "walmart_tulsa", name: "Walmart - Tulsa", lat: 36.1539, lng: -95.9928, category: "Walmart", isUserSpot: false },
-        { id: "loves_iona", name: "Love's Travel Stop - I-44", lat: 35.6131, lng: -97.4078, category: "Truck Stop", isUserSpot: false },
-        { id: "pilot_henryetta", name: "Pilot Flying J - Henryetta", lat: 35.4398, lng: -95.9815, category: "Truck Stop", isUserSpot: false },
-        { id: "cracker_barrel_norman", name: "Cracker Barrel - Norman", lat: 35.2226, lng: -97.4395, category: "Restaurant", isUserSpot: false },
-        { id: "planet_fitness_moore", name: "Planet Fitness - Moore", lat: 35.3392, lng: -97.4867, category: "24h Gym", isUserSpot: false },
-        { id: "mercy_hospital_okc", name: "Mercy Hospital OKC", lat: 35.5387, lng: -97.5783, category: "Hospital", isUserSpot: false },
-        { id: "ok_rest_area_i35", name: "I-35 Rest Area - Pauls Valley", lat: 34.7418, lng: -97.2249, category: "Rest Area", isUserSpot: false },
-        { id: "academy_sports_tulsa", name: "Academy Sports + Outdoors - Tulsa", lat: 36.1121, lng: -95.9368, category: "Sporting Goods", isUserSpot: false },
-        { id: "bass_pro_okc", name: "Bass Pro Shops - OKC", lat: 35.4987, lng: -97.5466, category: "Outdoor", isUserSpot: false },
-        { id: "cabelas_tulsa", name: "Cabela's - Tulsa (Broken Arrow)", lat: 36.0461, lng: -95.8327, category: "Outdoor", isUserSpot: false },
-        { id: "walmart_lawton", name: "Walmart - Lawton", lat: 34.6036, lng: -98.416, category: "Walmart", isUserSpot: false },
-        { id: "loves_ardmore", name: "Love's - Ardmore I-35", lat: 34.1743, lng: -97.1437, category: "Truck Stop", isUserSpot: false },
-        { id: "planet_fitness_edmond", name: "Planet Fitness - Edmond", lat: 35.6528, lng: -97.4781, category: "24h Gym", isUserSpot: false },
-        { id: "bass_pro_tulsa", name: "Bass Pro Shops - Tulsa (BA)", lat: 36.0649, lng: -95.7928, category: "Outdoor", isUserSpot: false },
-        { id: "academy_sports_okc", name: "Academy Sports - OKC North", lat: 35.579, lng: -97.552, category: "Sporting Goods", isUserSpot: false }
-    ];
-    
-    // ============================================================
-    // CLOUD DATA SYNC (JSONBin.io)
-    // ============================================================
-    let cloudData = {
-        votes: {},
-        comments: {},
-        userSpots: {}
-    };
-    
-    // Load data from JSONBin
-    async function loadFromCloud() {
-        try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                headers: {
-                    'X-Master-Key': JSONBIN_API_KEY
-                }
-            });
-            const result = await response.json();
-            if (result && result.record) {
-                cloudData = result.record;
-                if (!cloudData.votes) cloudData.votes = {};
-                if (!cloudData.comments) cloudData.comments = {};
-                if (!cloudData.userSpots) cloudData.userSpots = {};
-                console.log("✅ Loaded from cloud:", cloudData);
-            } else {
-                console.log("No existing data, using defaults");
-            }
-        } catch (error) {
-            console.error("Error loading from cloud:", error);
-        }
-        // Also load from localStorage as backup
-        const stored = localStorage.getItem("ok_parking_backup");
-        if (stored) {
-            try {
-                const backup = JSON.parse(stored);
-                // Merge backup if cloud is empty
-                if (Object.keys(cloudData.votes).length === 0) cloudData.votes = backup.votes || {};
-                if (Object.keys(cloudData.comments).length === 0) cloudData.comments = backup.comments || {};
-                if (Object.keys(cloudData.userSpots).length === 0) cloudData.userSpots = backup.userSpots || {};
-            } catch(e) {}
-        }
-        saveToLocalBackup();
-        refreshMapAndUI();
-    }
-    
-    // Save data to JSONBin
-    async function saveToCloud() {
-        try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': JSONBIN_API_KEY
-                },
-                body: JSON.stringify(cloudData)
-            });
-            if (response.ok) {
-                console.log("✅ Saved to cloud");
-                saveToLocalBackup();
-            } else {
-                console.error("Failed to save to cloud");
-            }
-        } catch (error) {
-            console.error("Error saving to cloud:", error);
-        }
-    }
-    
-    function saveToLocalBackup() {
-        localStorage.setItem("ok_parking_backup", JSON.stringify(cloudData));
-    }
-    
-    // Helper to update cloud after any change
-    async function updateCloud() {
-        await saveToCloud();
-        refreshMapAndUI();
-    }
-    
-    // ============================================================
-    // USERNAME SYSTEM
-    // ============================================================
+    let isAdminMode = false;
     let currentUsername = "";
-    let usedNameSet = new Set();
-    
-    const adjectives = ["Quiet", "Sleepy", "Nocturnal", "Stealth", "Gray", "Gentle", "Wandering", "Calm", "Deep", "Lone", "Silver", "Cozy", "Friendly", "Brave", "Clever", "Mellow", "Soft", "Rustic", "Night", "Hidden", "Rolling", "Free"];
-    const nouns = ["Owl", "Caravan", "Camper", "Tumbleweed", "PrairieDog", "Roadrunner", "Coyote", "Moon", "Shadow", "Wanderer", "Hatchback", "Prius", "Van", "Ranger", "Nomad", "Drifter", "Puma", "Bison", "Starling", "Willow", "Traveler", "Sleeper"];
-    
-    function generateRandomUsername() {
-        let availableAdj = adjectives.filter(a => !usedNameSet.has(a));
-        let availableNoun = nouns.filter(n => !usedNameSet.has(n));
-        if (availableAdj.length === 0) availableAdj = [...adjectives];
-        if (availableNoun.length === 0) availableNoun = [...nouns];
-        const adj = availableAdj[Math.floor(Math.random() * availableAdj.length)];
-        const noun = availableNoun[Math.floor(Math.random() * availableNoun.length)];
-        const full = `${adj}${noun}`;
-        usedNameSet.add(adj);
-        usedNameSet.add(noun);
-        return full;
-    }
-    
-    function loadUsername() {
-        let stored = localStorage.getItem("ok_safe_username");
-        let storedUsed = localStorage.getItem("ok_safe_used_tokens");
-        if (storedUsed) {
-            try { usedNameSet = new Set(JSON.parse(storedUsed)); } catch(e) {}
-        }
-        if (stored && stored.trim() !== "") {
-            currentUsername = stored;
-        } else {
-            currentUsername = generateRandomUsername();
-            localStorage.setItem("ok_safe_username", currentUsername);
-            localStorage.setItem("ok_safe_used_tokens", JSON.stringify([...usedNameSet]));
-        }
-        document.getElementById("usernameSpan").innerText = currentUsername;
-    }
-    
-    function changeUsername() {
-        let newName = prompt("Enter a new username (or leave blank for random)", "");
-        if (newName && newName.trim() !== "") {
-            currentUsername = newName.trim().substring(0, 25);
-        } else {
-            currentUsername = generateRandomUsername();
-            localStorage.setItem("ok_safe_used_tokens", JSON.stringify([...usedNameSet]));
-        }
-        localStorage.setItem("ok_safe_username", currentUsername);
-        document.getElementById("usernameSpan").innerText = currentUsername;
-    }
-    
-    // ============================================================
-    // MAP AND MARKERS
-    // ============================================================
+    let currentPlaceId = null;
     let map, markers = [];
     let allLocations = [];
-    let currentPlaceId = null;
+    let filteredLocations = [];
+    let currentFilter = "all";
     let pendingSpotLatLng = null;
+    let syncInProgress = false;
     
-    function getColorFromVotes(yes, no) {
+    // Combine all locations from separate files
+    function combineAllLocations() {
+        let combined = [];
+        
+        if (typeof walmartLocations !== 'undefined') combined.push(...walmartLocations);
+        if (typeof crackerBarrelLocations !== 'undefined') combined.push(...crackerBarrelLocations);
+        if (typeof lovesLocations !== 'undefined') combined.push(...lovesLocations);
+        if (typeof pilotLocations !== 'undefined') combined.push(...pilotLocations);
+        if (typeof casinoLocations !== 'undefined') combined.push(...casinoLocations);
+        if (typeof hospitalLocations !== 'undefined') combined.push(...hospitalLocations);
+        if (typeof gymLocations !== 'undefined') combined.push(...gymLocations);
+        if (typeof restAreaLocations !== 'undefined') combined.push(...restAreaLocations);
+        
+        // Add unique IDs
+        return combined.map((loc, idx) => ({ ...loc, id: `${loc.category.toLowerCase().replace(/ /g, '_')}_${idx}`, isUserSpot: false }));
+    }
+    
+    let remoteData = { votes: {}, comments: {}, approvedSpots: [], pendingSpots: [] };
+    
+    async function loadFromJSONBin() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { "X-Master-Key": JSONBIN_API_KEY }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.record) {
+                    remoteData = data.record;
+                    if (!remoteData.votes) remoteData.votes = {};
+                    if (!remoteData.comments) remoteData.comments = {};
+                    if (!remoteData.approvedSpots) remoteData.approvedSpots = [];
+                    if (!remoteData.pendingSpots) remoteData.pendingSpots = [];
+                }
+            }
+        } catch (err) { console.error("JSONbin error:", err); }
+    }
+    
+    async function saveToJSONBin() {
+        if (syncInProgress) return;
+        syncInProgress = true;
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
+                body: JSON.stringify(remoteData)
+            });
+        } catch (err) { console.error("Save error:", err); }
+        finally { syncInProgress = false; }
+    }
+    
+    function getApprovedSpotsCombined() {
+        const approvedUser = (remoteData.approvedSpots || []).map(s => ({
+            id: s.id, name: s.name, lat: s.lat, lng: s.lng,
+            category: s.description || "Community spot", isUserSpot: true,
+            submittedBy: s.submittedBy, city: s.city || "User added"
+        }));
+        return [...allLocations, ...approvedUser];
+    }
+    
+    function getColor(yes, no) {
         if (yes > 0 && no === 0) return "#2e7d32";
         if (no > 0 && yes === 0) return "#c62828";
         if (yes > 0 && no > 0) return "#f9a825";
@@ -495,222 +198,149 @@
     
     function createMarkerIcon(color, isUserSpot = false) {
         if (isUserSpot) {
-            return L.divIcon({
-                className: 'user-spot-icon',
-                html: `<img src="BlueTack.png" style="width: 32px; height: 32px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));" onerror="this.src='https://cdn-icons-png.flaticon.com/512/189/189121.png'">`,
-                iconSize: [32, 32],
-                popupAnchor: [0, -16]
-            });
+            return L.divIcon({ html: `<div style="background:#2c5e2e; width:22px; height:22px; border-radius:50%; border:2px solid white; text-align:center; line-height:22px; font-size:12px;">📍</div>`, iconSize: [22, 22], popupAnchor: [0, -11] });
         }
-        return L.divIcon({
-            className: 'parking-spot-icon',
-            html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [22, 22],
-            popupAnchor: [0, -11]
-        });
+        return L.divIcon({ html: `<div style="background-color:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 1px 3px black;"></div>`, iconSize: [16, 16], popupAnchor: [0, -8] });
+    }
+    
+    function applyFilter() {
+        let locationsToShow = getApprovedSpotsCombined();
+        if (currentFilter === "all") filteredLocations = locationsToShow;
+        else filteredLocations = locationsToShow.filter(l => l.category === currentFilter);
+        document.getElementById("statsBar").innerHTML = `📍 ${filteredLocations.length} locations shown • ${locationsToShow.length} total • 💬 ${Object.keys(remoteData.comments).reduce((a,b)=>a+(remoteData.comments[b]?.length||0),0)} reports`;
+        rebuildMarkers();
     }
     
     function rebuildMarkers() {
+        if (!map) return;
         markers.forEach(m => map.removeLayer(m));
         markers = [];
-        
-        const spots = [...defaultLocations];
-        for (let [id, spot] of Object.entries(cloudData.userSpots)) {
-            spots.push({
-                id: id,
-                name: spot.name,
-                lat: spot.lat,
-                lng: spot.lng,
-                category: spot.description || "User submitted",
-                isUserSpot: true,
-                submittedBy: spot.submittedBy,
-                submittedAt: spot.submittedAt
-            });
-        }
-        allLocations = spots;
-        
-        for (let loc of spots) {
-            const votes = cloudData.votes[loc.id] || { yes: 0, no: 0 };
-            const color = getColorFromVotes(votes.yes, votes.no);
+        for (let loc of filteredLocations) {
+            const votes = remoteData.votes[loc.id] || { yes: 0, no: 0 };
+            const color = getColor(votes.yes, votes.no);
             const icon = createMarkerIcon(color, loc.isUserSpot);
-            
-            const marker = L.marker([loc.lat, loc.lng], { icon: icon }).addTo(map);
+            const marker = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
             marker.id = loc.id;
-            marker.locData = loc;
-            
-            let popupContent = `<b>${escapeHtml(loc.name)}</b><br>${escapeHtml(loc.category)}`;
-            if (loc.isUserSpot && loc.submittedBy) {
-                popupContent += `<br><small>📍 Added by ${escapeHtml(loc.submittedBy)} on ${loc.submittedAt}</small>`;
-            }
-            popupContent += `<br>✅ ${votes.yes} 👍 | 👎 ${votes.no}<br><button onclick="window.selectLocation('${loc.id}')">View & Vote</button>`;
-            
-            marker.bindPopup(popupContent);
+            let popupHtml = `<b>${escapeHtml(loc.name)}</b><br>📌 ${loc.city}<br>✅ ${votes.yes} 👍 | 👎 ${votes.no}`;
+            if (loc.isUserSpot) popupHtml += `<br><small>Community added</small>`;
+            popupHtml += `<br><button onclick="window.selectLocation('${loc.id}')">Details & Report</button>`;
+            marker.bindPopup(popupHtml);
             marker.on('click', () => selectLocation(loc.id));
             markers.push(marker);
         }
+        if (currentPlaceId && filteredLocations.find(l => l.id === currentPlaceId)) selectLocation(currentPlaceId);
+        else if (filteredLocations.length) selectLocation(filteredLocations[0].id);
+    }
+    
+    function rebuildFullMapAndUI() {
+        applyFilter();
+        renderAdminPanel();
+        // Build filter buttons dynamically
+        const allSpots = getApprovedSpotsCombined();
+        const categories = [...new Set(allSpots.map(l => l.category))];
+        const filterDiv = document.getElementById("categoryFilter");
+        filterDiv.innerHTML = `<button class="filter-btn active" data-cat="all">All (${allSpots.length})</button>` + categories.map(c => `<button class="filter-btn" data-cat="${c}">${c} (${allSpots.filter(l=>l.category===c).length})</button>`).join("");
+        document.querySelectorAll(".filter-btn").forEach(btn => { btn.onclick = () => { document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); currentFilter = btn.getAttribute("data-cat"); applyFilter(); }; });
     }
     
     function selectLocation(placeId) {
         currentPlaceId = placeId;
-        const loc = allLocations.find(l => l.id === placeId);
-        if (loc) document.getElementById("selectedPlaceName").innerHTML = loc.name;
-        
-        const votes = cloudData.votes[placeId] || { yes: 0, no: 0 };
-        let statusText = "";
-        if (votes.yes > 0 && votes.no === 0) statusText = "🟢 GREEN - reportedly safe";
-        else if (votes.no > 0 && votes.yes === 0) statusText = "🔴 RED - reported risky";
-        else if (votes.yes > 0 && votes.no > 0) statusText = "🟡 Mixed reports - caution advised";
-        else statusText = "⚪ No votes yet (unknown)";
-        
-        document.getElementById("voteScore").innerHTML = `👍 ${votes.yes} | 👎 ${votes.no} — ${statusText}`;
-        
-        const comments = cloudData.comments[placeId] || [];
+        const allSpots = getApprovedSpotsCombined();
+        const loc = allSpots.find(l => l.id === placeId);
+        if (loc) document.getElementById("selectedPlaceName").innerHTML = `${escapeHtml(loc.name)} <span style="font-size:0.8rem;">📍 ${loc.city}</span>`;
+        const votes = remoteData.votes[placeId] || { yes: 0, no: 0 };
+        let status = votes.yes > votes.no ? "🟢 Mostly safe" : votes.no > votes.yes ? "🔴 Reported risky" : "⚪ No reports yet";
+        document.getElementById("voteScore").innerHTML = `👍 ${votes.yes} | 👎 ${votes.no} — ${status}`;
+        const comments = remoteData.comments[placeId] || [];
         const commentDiv = document.getElementById("commentList");
-        if (comments.length === 0) {
-            commentDiv.innerHTML = "<em>No comments yet. Be the first.</em>";
-        } else {
-            commentDiv.innerHTML = comments.slice().reverse().map(c => {
-                const isOld = (new Date() - new Date(c.rawTimestamp)) > (90 * 24 * 60 * 60 * 1000);
-                return `
-                    <div class="comment-item">
-                        <div class="comment-header">
-                            <span class="comment-name">${escapeHtml(c.username)}</span>
-                            <span class="comment-time">📅 ${c.timestamp}</span>
-                        </div>
-                        <div class="comment-text">💬 ${escapeHtml(c.text)}</div>
-                        ${isOld ? '<div class="old-comment-warning">⚠️ This comment is over 3 months old — conditions may have changed.</div>' : ''}
-                    </div>
-                `;
-            }).join("");
-        }
+        if (comments.length === 0) commentDiv.innerHTML = "<em>No reports yet. Share your experience!</em>";
+        else commentDiv.innerHTML = comments.slice().reverse().map(c => `<div class="comment-item"><div class="comment-header"><span class="comment-name">${escapeHtml(c.username)}</span><span class="comment-time">${escapeHtml(c.timestamp)}</span></div><div>${escapeHtml(c.text)}</div></div>`).join("");
     }
     
-    function refreshMapAndUI() {
-        rebuildMarkers();
-        if (currentPlaceId) selectLocation(currentPlaceId);
-        else if (allLocations.length > 0) selectLocation(allLocations[0].id);
-    }
-    
-    // ============================================================
-    // ACTIONS (Vote, Comment, Add Spot)
-    // ============================================================
     async function vote(type) {
-        if (!currentPlaceId) { alert("Click a marker on the map first"); return; }
-        if (!cloudData.votes[currentPlaceId]) cloudData.votes[currentPlaceId] = { yes: 0, no: 0 };
-        if (type === 'yes') cloudData.votes[currentPlaceId].yes++;
-        else cloudData.votes[currentPlaceId].no++;
-        await updateCloud();
+        if (!currentPlaceId) { alert("Click a marker first"); return; }
+        if (!remoteData.votes[currentPlaceId]) remoteData.votes[currentPlaceId] = { yes: 0, no: 0 };
+        if (type === 'yes') remoteData.votes[currentPlaceId].yes++;
+        else remoteData.votes[currentPlaceId].no++;
+        await saveToJSONBin();
+        selectLocation(currentPlaceId);
+        rebuildFullMapAndUI();
     }
     
     async function addComment() {
         const text = document.getElementById("commentInput").value;
         if (!currentPlaceId) { alert("Select a location first"); return; }
         if (!text.trim()) return;
-        
-        const now = new Date();
-        const formattedDate = now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        
-        const newComment = {
-            username: currentUsername,
-            text: text.substring(0, 200),
-            timestamp: formattedDate,
-            rawTimestamp: now.toISOString()
-        };
-        
-        if (!cloudData.comments[currentPlaceId]) cloudData.comments[currentPlaceId] = [];
-        cloudData.comments[currentPlaceId].push(newComment);
-        await updateCloud();
+        if (!remoteData.comments[currentPlaceId]) remoteData.comments[currentPlaceId] = [];
+        remoteData.comments[currentPlaceId].push({ username: currentUsername, text: text.substring(0, 200), timestamp: new Date().toLocaleString() });
+        await saveToJSONBin();
+        selectLocation(currentPlaceId);
         document.getElementById("commentInput").value = "";
     }
     
-    async function addUserSpot() {
-        if (!pendingSpotLatLng) {
-            alert("First click on the map where you want to add the spot");
-            return;
-        }
+    async function suggestUserSpot() {
+        if (!pendingSpotLatLng) { alert("Click on the map where this spot is located first"); return; }
         const name = document.getElementById("newSpotName").value.trim();
-        if (!name) {
-            alert("Please enter a place name");
-            return;
-        }
+        if (!name) { alert("Enter a business or location name"); return; }
         const desc = document.getElementById("newSpotDesc").value.trim();
-        const now = new Date();
-        const formattedDate = now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        
-        const spotId = "user_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-        cloudData.userSpots[spotId] = {
-            name: name,
-            description: desc,
-            lat: pendingSpotLatLng.lat,
-            lng: pendingSpotLatLng.lng,
-            submittedBy: currentUsername,
-            submittedAt: formattedDate,
-            rawTimestamp: now.toISOString()
-        };
-        await updateCloud();
-        
-        alert("Spot added! It will appear as a blue tack on the map.");
+        remoteData.pendingSpots.push({ id: "pending_" + Date.now(), name: name, description: desc || "Community suggestion", lat: pendingSpotLatLng.lat, lng: pendingSpotLatLng.lng, submittedBy: currentUsername, submittedAt: new Date().toLocaleString() });
+        await saveToJSONBin();
+        alert("Spot suggested! Admin will review.");
         document.getElementById("newSpotName").value = "";
         document.getElementById("newSpotDesc").value = "";
         pendingSpotLatLng = null;
+        if (isAdminMode) renderAdminPanel();
+    }
+    
+    async function approveSpot(idx) { let pending = remoteData.pendingSpots[idx]; remoteData.approvedSpots.push({ id: "user_" + Date.now(), name: pending.name, description: pending.description, lat: pending.lat, lng: pending.lng, submittedBy: pending.submittedBy, submittedAt: pending.submittedAt, city: "Community", category: "Community Spot" }); remoteData.pendingSpots.splice(idx, 1); await saveToJSONBin(); rebuildFullMapAndUI(); alert("Approved!"); }
+    async function rejectSpot(idx) { if (confirm("Reject?")) { remoteData.pendingSpots.splice(idx, 1); await saveToJSONBin(); renderAdminPanel(); } }
+    
+    function renderAdminPanel() {
+        let container = document.getElementById("pendingList");
+        if (!container) return;
+        let pendings = remoteData.pendingSpots || [];
+        if (pendings.length === 0) { container.innerHTML = "<em>No pending submissions.</em>"; return; }
+        container.innerHTML = "";
+        pendings.forEach((p, idx) => { let div = document.createElement("div"); div.className = "pending-item"; div.innerHTML = `<div><b>${escapeHtml(p.name)}</b><br><small>📍 ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}<br>📝 ${escapeHtml(p.description)}<br>👤 ${escapeHtml(p.submittedBy)}</small></div><div><button class="approve-btn" data-idx="${idx}">✅ Approve</button> <button class="reject-btn" data-idx="${idx}">❌ Reject</button></div>`; container.appendChild(div); });
+        document.querySelectorAll(".approve-btn").forEach(btn => btn.addEventListener("click", () => approveSpot(parseInt(btn.getAttribute("data-idx")))));
+        document.querySelectorAll(".reject-btn").forEach(btn => btn.addEventListener("click", () => rejectSpot(parseInt(btn.getAttribute("data-idx")))));
     }
     
     function exportCSV() {
-        let csvRows = [["Place ID", "Name", "Category", "Yes Votes", "No Votes", "Total Votes", "Is User Spot", "Submitted By", "Submitted Date"]];
-        for (let loc of allLocations) {
-            const votes = cloudData.votes[loc.id] || { yes: 0, no: 0 };
-            csvRows.push([
-                loc.id, `"${loc.name}"`, `"${loc.category}"`, votes.yes, votes.no, votes.yes + votes.no,
-                loc.isUserSpot ? "Yes" : "No",
-                `"${loc.submittedBy || ""}"`, `"${loc.submittedAt || ""}"`
-            ]);
-        }
-        const csvContent = csvRows.map(row => row.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `ok_parking_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
+        let rows = [["ID", "Name", "City", "Category", "Yes Votes", "No Votes"]];
+        let allSpots = getApprovedSpotsCombined();
+        for (let loc of allSpots) { let votes = remoteData.votes[loc.id] || { yes: 0, no: 0 }; rows.push([loc.id, loc.name, loc.city || "", loc.category, votes.yes, votes.no]); }
+        let csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+        let link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); link.download = `ok_parking_${new Date().toISOString().slice(0,10)}.csv`; link.click();
     }
     
-    function escapeHtml(str) {
-        if (!str) return "";
-        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-    }
+    function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
     
-    // ============================================================
-    // INITIALIZE
-    // ============================================================
-    function initMap() {
-        map = L.map('map').setView([35.5, -97.5], 7);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CartoDB',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
-        
-        map.on('click', (e) => {
-            pendingSpotLatLng = e.latlng;
-            L.popup()
-                .setLatLng(e.latlng)
-                .setContent("📍 Location set! Now enter a name and click 'Add my location'")
-                .openOn(map);
-        });
-        
+    const adjectives = ["Quiet", "Sleepy", "Nocturnal", "Stealth", "Gray", "Gentle", "Wandering", "Calm", "Deep", "Lone", "Silver", "Cozy", "Friendly", "Brave", "Clever", "Mellow"];
+    const nouns = ["Owl", "Caravan", "Camper", "Tumbleweed", "PrairieDog", "Roadrunner", "Coyote", "Moon", "Shadow", "Wanderer", "Hatchback", "Prius", "Van", "Ranger", "Nomad"];
+    function generateUsername() { return adjectives[Math.floor(Math.random() * adjectives.length)] + nouns[Math.floor(Math.random() * nouns.length)]; }
+    function loadUsername() { let stored = localStorage.getItem("ok_username"); if (stored) currentUsername = stored; else { currentUsername = generateUsername(); localStorage.setItem("ok_username", currentUsername); } document.getElementById("usernameSpan").innerText = currentUsername; }
+    function changeUsername() { let newName = prompt("New username (or blank for random):"); if (newName && newName.trim()) currentUsername = newName.trim().substring(0, 25); else currentUsername = generateUsername(); localStorage.setItem("ok_username", currentUsername); document.getElementById("usernameSpan").innerText = currentUsername; }
+    
+    async function init() {
+        allLocations = combineAllLocations();
+        await loadFromJSONBin();
         loadUsername();
-        loadFromCloud();
+        map = L.map('map').setView([35.5, -97.2], 7.2);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap & CartoDB', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
+        map.on('click', (e) => { pendingSpotLatLng = e.latlng; L.popup().setLatLng(e.latlng).setContent("📍 Location set! Enter name and click 'Suggest spot'").openOn(map); });
+        rebuildFullMapAndUI();
+        document.getElementById("thumbUpBtn").onclick = () => vote('yes');
+        document.getElementById("thumbDownBtn").onclick = () => vote('no');
+        document.getElementById("postCommentBtn").onclick = addComment;
+        document.getElementById("changeNameBtn").onclick = changeUsername;
+        document.getElementById("addSpotBtn").onclick = suggestUserSpot;
+        document.getElementById("exportCsvBtn").onclick = exportCSV;
+        document.getElementById("adminToggleBtn").onclick = () => { let pwd = prompt("Enter admin password:"); if (pwd === "okcadmin2025") { isAdminMode = true; document.getElementById("adminPanel").style.display = "block"; renderAdminPanel(); alert("Admin mode - approve/reject spots"); } else alert("Wrong password"); };
     }
     
     window.selectLocation = selectLocation;
-    
-    document.getElementById("thumbUpBtn").onclick = () => vote('yes');
-    document.getElementById("thumbDownBtn").onclick = () => vote('no');
-    document.getElementById("postCommentBtn").onclick = addComment;
-    document.getElementById("changeNameBtn").onclick = changeUsername;
-    document.getElementById("addSpotBtn").onclick = addUserSpot;
-    document.getElementById("exportCsvBtn").onclick = exportCSV;
-    
-    initMap();
+    init();
 </script>
 </body>
 </html>
