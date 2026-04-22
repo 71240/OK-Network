@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OK Safe Parking Network</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 500px; width: 100%; }
+        body { font-family: sans-serif; margin: 0; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🌙 OK Safe Parking Network</h1>
+    <div id="map"></div>
+    
+    <script src="locations/walmart.js"></script>
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([35.5, -97.5], 7);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        // Check if walmartLocations exists and add markers
+        if (typeof walmartLocations !== 'undefined') {
+            walmartLocations.forEach(function(loc) {
+                L.marker([loc.lat, loc.lng])
+                    .bindPopup('<b>' + loc.name + '</b><br>' + loc.city)
+                    .addTo(map);
+            });
+        } else {
+            console.log("walmartLocations not found!");
+            document.body.innerHTML += "<p>Error: Location data not loading. Check console.</p>";
+        }
+    </script>
+</body>
+</html>
