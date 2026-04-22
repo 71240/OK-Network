@@ -7,8 +7,6 @@
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -255,6 +253,13 @@
             padding: 15px;
             color: #4a4a3a;
         }
+        .sync-status {
+            font-size: 0.7rem;
+            background: #2c5e2e40;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
         @media (max-width: 700px) {
             .location-title { font-size: 1.3rem; }
             .thumbs { padding: 5px 12px; }
@@ -269,7 +274,7 @@
             <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
             <div>
                 <h1>🌙 OK Safe Parking Network</h1>
-                <div class="sub">Live community votes • everyone sees updates</div>
+                <div class="sub">Live community votes • syncs for everyone</div>
             </div>
         </div>
         <div class="user-area">
@@ -312,43 +317,20 @@
     </div>
     <button id="exportCsvBtn" class="export-btn">📎 Download CSV snapshot</button>
     <div class="warning">
-        ⚠️ Not legal advice. Always check local signs. Votes & spots save for everyone instantly.
+        ⚠️ Not legal advice. Always check local signs. Votes & spots save to cloud — everyone sees updates.
     </div>
-    <footer>❤️ Anonymous • No login needed • Data shared with community • Be safe out there</footer>
+    <footer>❤️ Anonymous • No login needed • Data syncs via JSONBin.io • Be safe out there</footer>
 </div>
 
 <script>
     // ============================================================
-    // FIREBASE CONFIGURATION - REAL DATABASE (I'll give you these)
-    // For now, it uses localStorage as fallback
+    // YOUR JSONBIN.IO CREDENTIALS (already pasted)
     // ============================================================
-    
-    // REAL FIREBASE KEYS - Replace these with the ones I'll send you
-    const FIREBASE_CONFIG = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-        projectId: "YOUR_PROJECT",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-    
-    // Set this to true AFTER I give you real keys
-    const USE_FIREBASE = false;
-    
-    // Initialize Firebase if using
-    let database = null;
-    if (USE_FIREBASE && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
-        firebase.initializeApp(FIREBASE_CONFIG);
-        database = firebase.database();
-        console.log("🔥 Firebase connected");
-    } else {
-        console.log("💾 Using localStorage fallback (votes only save on this device)");
-    }
+    const JSONBIN_BIN_ID = "69e921d136566621a8df20c8";
+    const JSONBIN_API_KEY = "$2a$10$pc9P7XGCOIL7n0.XPQs94eFWfy8LyNKP2d8flF55jf6Tkrli4hUXW";
     
     // ============================================================
-    // OKLAHOMA LOCATIONS (16 spots with Academy, Bass Pro, Cabela's)
+    // OKLAHOMA LOCATIONS (16 spots)
     // ============================================================
     const defaultLocations = [
         { id: "walmart_okc1", name: "Walmart Supercenter - OKC", lat: 35.4676, lng: -97.5164, category: "Walmart", isUserSpot: false },
@@ -370,38 +352,90 @@
     ];
     
     // ============================================================
-    // LOCAL STORAGE FALLBACK (works immediately, no Firebase needed)
+    // CLOUD DATA SYNC (JSONBin.io)
     // ============================================================
-    let localData = {
+    let cloudData = {
         votes: {},
         comments: {},
         userSpots: {}
     };
     
-    function loadLocalData() {
-        const stored = localStorage.getItem("ok_parking_data");
+    // Load data from JSONBin
+    async function loadFromCloud() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: {
+                    'X-Master-Key': JSONBIN_API_KEY
+                }
+            });
+            const result = await response.json();
+            if (result && result.record) {
+                cloudData = result.record;
+                if (!cloudData.votes) cloudData.votes = {};
+                if (!cloudData.comments) cloudData.comments = {};
+                if (!cloudData.userSpots) cloudData.userSpots = {};
+                console.log("✅ Loaded from cloud:", cloudData);
+            } else {
+                console.log("No existing data, using defaults");
+            }
+        } catch (error) {
+            console.error("Error loading from cloud:", error);
+        }
+        // Also load from localStorage as backup
+        const stored = localStorage.getItem("ok_parking_backup");
         if (stored) {
             try {
-                localData = JSON.parse(stored);
-            } catch(e) { console.error("Failed to parse stored data"); }
+                const backup = JSON.parse(stored);
+                // Merge backup if cloud is empty
+                if (Object.keys(cloudData.votes).length === 0) cloudData.votes = backup.votes || {};
+                if (Object.keys(cloudData.comments).length === 0) cloudData.comments = backup.comments || {};
+                if (Object.keys(cloudData.userSpots).length === 0) cloudData.userSpots = backup.userSpots || {};
+            } catch(e) {}
         }
-        if (!localData.votes) localData.votes = {};
-        if (!localData.comments) localData.comments = {};
-        if (!localData.userSpots) localData.userSpots = {};
+        saveToLocalBackup();
+        refreshMapAndUI();
     }
     
-    function saveLocalData() {
-        localStorage.setItem("ok_parking_data", JSON.stringify(localData));
+    // Save data to JSONBin
+    async function saveToCloud() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
+                },
+                body: JSON.stringify(cloudData)
+            });
+            if (response.ok) {
+                console.log("✅ Saved to cloud");
+                saveToLocalBackup();
+            } else {
+                console.error("Failed to save to cloud");
+            }
+        } catch (error) {
+            console.error("Error saving to cloud:", error);
+        }
+    }
+    
+    function saveToLocalBackup() {
+        localStorage.setItem("ok_parking_backup", JSON.stringify(cloudData));
+    }
+    
+    // Helper to update cloud after any change
+    async function updateCloud() {
+        await saveToCloud();
+        refreshMapAndUI();
     }
     
     // ============================================================
-    // USERNAME SYSTEM (adjective + noun, no repeats)
+    // USERNAME SYSTEM
     // ============================================================
     let currentUsername = "";
     let usedNameSet = new Set();
     
-    const adjectives = ["Quiet", "Sleepy", "Nocturnal", "Stealth", "Gray", "Gentle", "Wandering", "Calm", "Deep", "Lone", "Silver", "Cozy", "Friendly", "Brave", "Clever", "Mellow", "Soft", "Rustic", "Night", "Hidden", "Rolling", "Free", "Brave", "Calm", "Swift"];
-    const nouns = ["Owl", "Caravan", "Camper", "Tumbleweed", "PrairieDog", "Roadrunner", "Coyote", "Moon", "Shadow", "Wanderer", "Hatchback", "Prius", "Van", "Ranger", "Nomad", "Drifter", "Puma", "Bison", "Starling", "Willow", "Traveler", "Sleeper", "Nomad"];
+    const adjectives = ["Quiet", "Sleepy", "Nocturnal", "Stealth", "Gray", "Gentle", "Wandering", "Calm", "Deep", "Lone", "Silver", "Cozy", "Friendly", "Brave", "Clever", "Mellow", "Soft", "Rustic", "Night", "Hidden", "Rolling", "Free"];
+    const nouns = ["Owl", "Caravan", "Camper", "Tumbleweed", "PrairieDog", "Roadrunner", "Coyote", "Moon", "Shadow", "Wanderer", "Hatchback", "Prius", "Van", "Ranger", "Nomad", "Drifter", "Puma", "Bison", "Starling", "Willow", "Traveler", "Sleeper"];
     
     function generateRandomUsername() {
         let availableAdj = adjectives.filter(a => !usedNameSet.has(a));
@@ -452,12 +486,11 @@
     let currentPlaceId = null;
     let pendingSpotLatLng = null;
     
-    // Color logic: yellow default, green if any yes, red if any no
     function getColorFromVotes(yes, no) {
-        if (yes > 0 && no === 0) return "#2e7d32"; // green - safe
-        if (no > 0 && yes === 0) return "#c62828"; // red - risky
-        if (yes > 0 && no > 0) return "#f9a825"; // amber - mixed
-        return "#ffd966"; // yellow - no votes
+        if (yes > 0 && no === 0) return "#2e7d32";
+        if (no > 0 && yes === 0) return "#c62828";
+        if (yes > 0 && no > 0) return "#f9a825";
+        return "#ffd966";
     }
     
     function createMarkerIcon(color, isUserSpot = false) {
@@ -471,20 +504,18 @@
         }
         return L.divIcon({
             className: 'parking-spot-icon',
-            html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: 0.1s;"></div>`,
+            html: `<div style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
             iconSize: [22, 22],
             popupAnchor: [0, -11]
         });
     }
     
     function rebuildMarkers() {
-        // Clear existing markers
         markers.forEach(m => map.removeLayer(m));
         markers = [];
         
-        // Merge user spots with defaults
         const spots = [...defaultLocations];
-        for (let [id, spot] of Object.entries(localData.userSpots)) {
+        for (let [id, spot] of Object.entries(cloudData.userSpots)) {
             spots.push({
                 id: id,
                 name: spot.name,
@@ -499,7 +530,7 @@
         allLocations = spots;
         
         for (let loc of spots) {
-            const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
+            const votes = cloudData.votes[loc.id] || { yes: 0, no: 0 };
             const color = getColorFromVotes(votes.yes, votes.no);
             const icon = createMarkerIcon(color, loc.isUserSpot);
             
@@ -514,9 +545,7 @@
             popupContent += `<br>✅ ${votes.yes} 👍 | 👎 ${votes.no}<br><button onclick="window.selectLocation('${loc.id}')">View & Vote</button>`;
             
             marker.bindPopup(popupContent);
-            marker.on('click', () => {
-                selectLocation(loc.id);
-            });
+            marker.on('click', () => selectLocation(loc.id));
             markers.push(marker);
         }
     }
@@ -526,8 +555,7 @@
         const loc = allLocations.find(l => l.id === placeId);
         if (loc) document.getElementById("selectedPlaceName").innerHTML = loc.name;
         
-        const votes = localData.votes[placeId] || { yes: 0, no: 0 };
-        const total = votes.yes + votes.no;
+        const votes = cloudData.votes[placeId] || { yes: 0, no: 0 };
         let statusText = "";
         if (votes.yes > 0 && votes.no === 0) statusText = "🟢 GREEN - reportedly safe";
         else if (votes.no > 0 && votes.yes === 0) statusText = "🔴 RED - reported risky";
@@ -536,8 +564,7 @@
         
         document.getElementById("voteScore").innerHTML = `👍 ${votes.yes} | 👎 ${votes.no} — ${statusText}`;
         
-        // Render comments
-        const comments = localData.comments[placeId] || [];
+        const comments = cloudData.comments[placeId] || [];
         const commentDiv = document.getElementById("commentList");
         if (comments.length === 0) {
             commentDiv.innerHTML = "<em>No comments yet. Be the first.</em>";
@@ -558,28 +585,24 @@
         }
     }
     
-    function updateMarkerColor(placeId) {
-        const marker = markers.find(m => m.id === placeId);
-        if (!marker || marker.locData?.isUserSpot) return;
-        const votes = localData.votes[placeId] || { yes: 0, no: 0 };
-        const color = getColorFromVotes(votes.yes, votes.no);
-        marker.setIcon(createMarkerIcon(color, false));
+    function refreshMapAndUI() {
+        rebuildMarkers();
+        if (currentPlaceId) selectLocation(currentPlaceId);
+        else if (allLocations.length > 0) selectLocation(allLocations[0].id);
     }
     
     // ============================================================
-    // VOTING, COMMENTS, USER SPOTS
+    // ACTIONS (Vote, Comment, Add Spot)
     // ============================================================
-    function vote(type) {
+    async function vote(type) {
         if (!currentPlaceId) { alert("Click a marker on the map first"); return; }
-        if (!localData.votes[currentPlaceId]) localData.votes[currentPlaceId] = { yes: 0, no: 0 };
-        if (type === 'yes') localData.votes[currentPlaceId].yes++;
-        else localData.votes[currentPlaceId].no++;
-        saveLocalData();
-        updateMarkerColor(currentPlaceId);
-        selectLocation(currentPlaceId);
+        if (!cloudData.votes[currentPlaceId]) cloudData.votes[currentPlaceId] = { yes: 0, no: 0 };
+        if (type === 'yes') cloudData.votes[currentPlaceId].yes++;
+        else cloudData.votes[currentPlaceId].no++;
+        await updateCloud();
     }
     
-    function addComment() {
+    async function addComment() {
         const text = document.getElementById("commentInput").value;
         if (!currentPlaceId) { alert("Select a location first"); return; }
         if (!text.trim()) return;
@@ -594,14 +617,13 @@
             rawTimestamp: now.toISOString()
         };
         
-        if (!localData.comments[currentPlaceId]) localData.comments[currentPlaceId] = [];
-        localData.comments[currentPlaceId].push(newComment);
-        saveLocalData();
-        selectLocation(currentPlaceId);
+        if (!cloudData.comments[currentPlaceId]) cloudData.comments[currentPlaceId] = [];
+        cloudData.comments[currentPlaceId].push(newComment);
+        await updateCloud();
         document.getElementById("commentInput").value = "";
     }
     
-    function addUserSpot() {
+    async function addUserSpot() {
         if (!pendingSpotLatLng) {
             alert("First click on the map where you want to add the spot");
             return;
@@ -616,7 +638,7 @@
         const formattedDate = now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         
         const spotId = "user_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-        localData.userSpots[spotId] = {
+        cloudData.userSpots[spotId] = {
             name: name,
             description: desc,
             lat: pendingSpotLatLng.lat,
@@ -625,41 +647,30 @@
             submittedAt: formattedDate,
             rawTimestamp: now.toISOString()
         };
-        saveLocalData();
+        await updateCloud();
         
         alert("Spot added! It will appear as a blue tack on the map.");
         document.getElementById("newSpotName").value = "";
         document.getElementById("newSpotDesc").value = "";
         pendingSpotLatLng = null;
-        rebuildMarkers();
     }
     
     function exportCSV() {
         let csvRows = [["Place ID", "Name", "Category", "Yes Votes", "No Votes", "Total Votes", "Is User Spot", "Submitted By", "Submitted Date"]];
-        
         for (let loc of allLocations) {
-            const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
+            const votes = cloudData.votes[loc.id] || { yes: 0, no: 0 };
             csvRows.push([
-                loc.id, 
-                `"${loc.name}"`, 
-                `"${loc.category}"`, 
-                votes.yes, 
-                votes.no, 
-                votes.yes + votes.no,
+                loc.id, `"${loc.name}"`, `"${loc.category}"`, votes.yes, votes.no, votes.yes + votes.no,
                 loc.isUserSpot ? "Yes" : "No",
-                `"${loc.submittedBy || ""}"`,
-                `"${loc.submittedAt || ""}"`
+                `"${loc.submittedBy || ""}"`, `"${loc.submittedAt || ""}"`
             ]);
         }
-        
         const csvContent = csvRows.map(row => row.join(",")).join("\n");
         const blob = new Blob([csvContent], { type: "text/csv" });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
+        link.href = URL.createObjectURL(blob);
         link.download = `ok_parking_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-        URL.revokeObjectURL(url);
     }
     
     function escapeHtml(str) {
@@ -668,7 +679,7 @@
     }
     
     // ============================================================
-    // INITIALIZE MAP
+    // INITIALIZE
     // ============================================================
     function initMap() {
         map = L.map('map').setView([35.5, -97.5], 7);
@@ -678,34 +689,27 @@
             maxZoom: 19
         }).addTo(map);
         
-        // Click to set pending spot location
         map.on('click', (e) => {
             pendingSpotLatLng = e.latlng;
-            const popup = L.popup()
+            L.popup()
                 .setLatLng(e.latlng)
-                .setContent(`📍 Location set! Now enter a name and click "Add my location"`)
+                .setContent("📍 Location set! Now enter a name and click 'Add my location'")
                 .openOn(map);
-            setTimeout(() => map.closePopup(popup), 3000);
         });
         
-        loadLocalData();
         loadUsername();
-        rebuildMarkers();
-        if (allLocations.length > 0) selectLocation(allLocations[0].id);
+        loadFromCloud();
     }
     
-    // Make selectLocation global for popup buttons
     window.selectLocation = selectLocation;
     
-    // Event listeners
-    document.getElementById("thumbUpBtn").addEventListener("click", () => vote('yes'));
-    document.getElementById("thumbDownBtn").addEventListener("click", () => vote('no'));
-    document.getElementById("postCommentBtn").addEventListener("click", addComment);
-    document.getElementById("changeNameBtn").addEventListener("click", changeUsername);
-    document.getElementById("addSpotBtn").addEventListener("click", addUserSpot);
-    document.getElementById("exportCsvBtn").addEventListener("click", exportCSV);
+    document.getElementById("thumbUpBtn").onclick = () => vote('yes');
+    document.getElementById("thumbDownBtn").onclick = () => vote('no');
+    document.getElementById("postCommentBtn").onclick = addComment;
+    document.getElementById("changeNameBtn").onclick = changeUsername;
+    document.getElementById("addSpotBtn").onclick = addUserSpot;
+    document.getElementById("exportCsvBtn").onclick = exportCSV;
     
-    // Start the map
     initMap();
 </script>
 </body>
