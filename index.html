@@ -77,8 +77,15 @@
     <footer>Anonymous • Names saved locally • All data shared across users</footer>
 </div>
 
-<!-- Location Data Files -->
+<!-- ALL Location Data Files -->
 <script src="locations/walmart.js"></script>
+<script src="locations/crackerbarrel.js"></script>
+<script src="locations/loves.js"></script>
+<script src="locations/pilot.js"></script>
+<script src="locations/casinos.js"></script>
+<script src="locations/hospitals.js"></script>
+<script src="locations/gyms.js"></script>
+<script src="locations/restareas.js"></script>
 
 <script>
     // ========== CONFIGURATION ==========
@@ -113,10 +120,21 @@
         localStorage.setItem("ok_parking_data", JSON.stringify(localData));
     }
     
-    // Combine all locations
+    // Combine ALL locations from all files
     function combineAllLocations() {
         let combined = [];
+        
+        // Add all location files if they exist
         if (typeof walmartLocations !== 'undefined') combined.push(...walmartLocations);
+        if (typeof crackerBarrelLocations !== 'undefined') combined.push(...crackerBarrelLocations);
+        if (typeof lovesLocations !== 'undefined') combined.push(...lovesLocations);
+        if (typeof pilotLocations !== 'undefined') combined.push(...pilotLocations);
+        if (typeof casinoLocations !== 'undefined') combined.push(...casinoLocations);
+        if (typeof hospitalLocations !== 'undefined') combined.push(...hospitalLocations);
+        if (typeof gymLocations !== 'undefined') combined.push(...gymLocations);
+        if (typeof restAreaLocations !== 'undefined') combined.push(...restAreaLocations);
+        
+        // Add user-approved spots
         if (localData.approvedSpots) {
             localData.approvedSpots.forEach(s => {
                 combined.push({
@@ -130,6 +148,8 @@
                 });
             });
         }
+        
+        console.log(`Loaded ${combined.length} total locations`);
         return combined.map((loc, idx) => ({ ...loc, id: loc.id || `loc_${idx}` }));
     }
     
@@ -158,12 +178,6 @@
     function generatePopupHtml(loc) {
         const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
         const comments = localData.comments[loc.id] || [];
-        const total = votes.yes + votes.no;
-        let status = "";
-        if (votes.yes > 0 && votes.no === 0) status = "🟢 Safe";
-        else if (votes.no > 0 && votes.yes === 0) status = "🔴 Risky";
-        else if (votes.yes > 0 && votes.no > 0) status = "🟡 Mixed";
-        else status = "⚪ No votes";
         
         let commentsHtml = '';
         if (comments.length === 0) {
@@ -181,19 +195,18 @@
         return `
             <div style="min-width: 250px;">
                 <b style="font-size: 1.1rem;">${escapeHtml(loc.name)}</b><br>
-                <span style="font-size: 0.8rem; color: #666;">📍 ${escapeHtml(loc.city)}</span>
+                <span style="font-size: 0.8rem; color: #666;">📍 ${escapeHtml(loc.city)} • ${escapeHtml(loc.category)}</span>
                 <div style="font-size: 1rem; margin: 8px 0;">
                     <img src="ThumbsUp.png" style="width: 20px; vertical-align: middle;"> ${votes.yes} &nbsp;&nbsp;
                     <img src="ThumbsDown.png" style="width: 20px; vertical-align: middle;"> ${votes.no}
-                    <span style="margin-left: 8px; font-size: 0.8rem;">${status}</span>
                 </div>
                 
                 <div class="popup-buttons">
                     <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')">
-                        <img src="ThumbsUp.png" style="width: 24px;"> Yes (Safe)
+                        <img src="ThumbsUp.png" style="width: 24px;"> Safe
                     </button>
                     <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')">
-                        <img src="ThumbsDown.png" style="width: 24px;"> No (Risky)
+                        <img src="ThumbsDown.png" style="width: 24px;"> Risky
                     </button>
                 </div>
                 
@@ -226,6 +239,7 @@
         }
         
         renderAdminPanel();
+        console.log(`Displayed ${markers.length} markers on map`);
     }
     
     window.vote = function(placeId, type) {
@@ -234,7 +248,6 @@
         else localData.votes[placeId].no++;
         saveLocalData();
         
-        // Update the popup
         const loc = allLocations.find(l => l.id === placeId);
         if (loc) {
             const marker = markers.find(m => m.id === placeId);
@@ -255,7 +268,6 @@
         });
         saveLocalData();
         
-        // Update the popup
         const loc = allLocations.find(l => l.id === placeId);
         if (loc) {
             const marker = markers.find(m => m.id === placeId);
@@ -359,7 +371,6 @@
     
     function escapeHtml(str) { if (!str) return ""; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
     
-    // Username functions
     const adjectives = ["Quiet", "Sleepy", "Nocturnal", "Stealth", "Gray", "Gentle", "Wandering", "Calm", "Deep", "Lone", "Silver", "Cozy", "Friendly", "Brave", "Clever"];
     const nouns = ["Owl", "Caravan", "Camper", "Tumbleweed", "PrairieDog", "Roadrunner", "Coyote", "Moon", "Shadow", "Wanderer", "Van", "Nomad"];
     function generateUsername() { return adjectives[Math.floor(Math.random() * adjectives.length)] + nouns[Math.floor(Math.random() * nouns.length)]; }
