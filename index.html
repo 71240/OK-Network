@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        /* Existing styles kept; added specific fixes for popup height and marker clarity */
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { margin: 0; padding: 20px; background: #1a2a1f; display: flex; justify-content: center; }
         .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 32px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -19,7 +18,7 @@
         .sub { font-style: italic; opacity: 0.9; font-size: 0.8rem; }
         .user-area { background: #1f3b20; padding: 8px 16px; border-radius: 60px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .username-display { background: #e9b35f; color: #1e2a1a; padding: 5px 12px; border-radius: 40px; font-weight: bold; font-size: 0.9rem; }
-        .change-name-btn, .admin-btn, .export-btn { border: none; padding: 6px 14px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: opacity 0.2s; }
+        .change-name-btn, .admin-btn, .export-btn { border: none; padding: 6px 14px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
         .change-name-btn { background: #f5bc70; }
         .admin-btn { background: #ffaa44; }
         .export-btn { background: #4a6fa5; color: white; }
@@ -29,10 +28,11 @@
         .add-spot-bar input { padding: 8px 16px; border-radius: 30px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
         .add-spot-bar button { background: #2c5e2e; color: white; border: none; padding: 8px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; }
         .admin-panel { background: #fff1d6; padding: 12px 20px; border-top: 2px solid #e0b354; display: none; max-height: 200px; overflow-y: auto; }
-        .pending-item { background: white; padding: 10px 15px; margin: 8px 0; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; }
+        .pending-item { background: white; padding: 10px 15px; margin: 8px 0; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; font-size: 0.85rem; }
         .popup-comments { max-height: 120px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px; font-size: 0.85rem; }
         .comment-item { border-bottom: 1px solid #eee; padding: 5px 0; }
         .warning { background: #fff1c1; padding: 6px 20px; text-align: center; font-size: 0.7rem; border-top: 1px solid #eee; }
+        .vote-btn { background: none; border: 1px solid #ccc; cursor: pointer; padding: 4px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -40,7 +40,7 @@
     <div class="header">
         <div class="logo-area">
             <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
-            <div><h1>🌙 OK Safe Parking</h1><div class="sub">Tap markers for safety info</div></div>
+            <div><h1>🌙 OK Safe Parking</h1><div class="sub">Color-coded markers show brand and safety</div></div>
         </div>
         <div class="user-area">
             <span id="usernameSpan" class="username-display">...</span>
@@ -84,6 +84,18 @@
     let isAdminMode = false;
     let localData = { votes: {}, comments: {}, approvedSpots: [], pendingSpots: [] };
 
+    const categoryColors = {
+        "Walmart": "#0071ce",
+        "Loves": "#e21e26",
+        "Cracker Barrel": "#5e3a24",
+        "Pilot": "#ff8200",
+        "Casino": "#7b1fa2",
+        "Hospital": "#1976d2",
+        "Gym": "#455a64",
+        "Rest Area": "#2e7d32",
+        "Community Spot": "#2c5e2e"
+    };
+
     function loadLocalData() {
         const stored = localStorage.getItem("ok_parking_data");
         if (stored) try { localData = JSON.parse(stored); } catch(e) {}
@@ -110,21 +122,21 @@
             combined.push({...s, category: s.category || "Community Spot", isUserSpot: true});
         });
 
-        // Use Lat/Lng as ID if one doesn't exist to prevent duplicates
         return combined.map(loc => ({ ...loc, id: loc.id || `${loc.lat}_${loc.lng}` }));
     }
 
     function getColor(yes, no) {
-        if (yes > 0 && no === 0) return "#2e7d32";
-        if (no > 0 && yes === 0) return "#c62828";
-        if (yes > 0 && no > 0) return "#f9a825";
-        return "#ffd966";
+        if (yes > 0 && no === 0) return "#2e7d32"; // Green
+        if (no > 0 && yes === 0) return "#c62828"; // Red
+        if (yes > 0 && no > 0) return "#f9a825";   // Orange/Yellow
+        return "#ffffff"; // White (Neutral)
     }
 
-    function createMarkerIcon(color, isUserSpot = false) {
-        const size = isUserSpot ? 22 : 16;
+    function createMarkerIcon(safetyColor, category, isUserSpot = false) {
+        const brandColor = categoryColors[category] || "#666";
+        const size = isUserSpot ? 22 : 18;
         return L.divIcon({
-            html: `<div style="background-color:${isUserSpot ? '#2c5e2e' : color}; width:${size}px; height:${size}px; border-radius:50%; border:2px solid white; box-shadow:0 1px 3px black; display:flex; align-items:center; justify-content:center; font-size:10px;">${isUserSpot ? '📍' : ''}</div>`,
+            html: `<div style="background-color:${safetyColor}; width:${size}px; height:${size}px; border-radius:50%; border:3px solid ${brandColor}; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-size:10px;">${isUserSpot ? '👤' : ''}</div>`,
             iconSize: [size, size], popupAnchor: [0, -size/2]
         });
     }
@@ -133,22 +145,19 @@
         const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
         const comments = localData.comments[loc.id] || [];
         const commentsHtml = comments.length === 0 ? '<em>No notes yet.</em>' : 
-            comments.slice().reverse().map(c => `
-                <div class="comment-item">
-                    <span style="font-weight:bold; color:#2c5e2e;">${escapeHtml(c.username)}</span>: ${escapeHtml(c.text)}
-                </div>`).join('');
+            comments.slice().reverse().map(c => `<div class="comment-item"><b>${escapeHtml(c.username)}:</b> ${escapeHtml(c.text)}</div>`).join('');
         
         return `
             <div style="min-width: 220px; max-width: 250px;">
                 <b style="font-size: 1rem;">${escapeHtml(loc.name)}</b><br>
                 <small style="color: #666;">${escapeHtml(loc.city)} • ${escapeHtml(loc.category)}</small>
                 <div style="margin: 10px 0; display: flex; justify-content: space-around; background: #eee; padding: 5px; border-radius: 10px;">
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')"><img src="ThumbsUp.png" width="18"> ${votes.yes}</button>
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')"><img src="ThumbsDown.png" width="18"> ${votes.no}</button>
+                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')"><img src="ThumbsUp.png" width="16" onerror="this.src='https://cdn-icons-png.flaticon.com/16/179/179655.png'"> ${votes.yes}</button>
+                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')"><img src="ThumbsDown.png" width="16" onerror="this.src='https://cdn-icons-png.flaticon.com/16/179/179656.png'"> ${votes.no}</button>
                 </div>
-                <div class="popup-comments" id="comments-${loc.id}">${commentsHtml}</div>
+                <div class="popup-comments">${commentsHtml}</div>
                 <div style="margin-top:8px; display:flex; gap:5px;">
-                    <input type="text" id="comment-input-${loc.id}" placeholder="Add note..." style="flex:1; padding:4px; border-radius:4px; border:1px solid #ccc; font-size:0.8rem;">
+                    <input type="text" id="comment-input-${loc.id}" placeholder="Add note..." style="flex:1; padding:4px; border-radius:4px; border:1px solid #ccc;">
                     <button onclick="window.addComment('${loc.id}')" style="background:#2c5e2e; color:white; border:none; border-radius:4px; padding:2px 8px;">Go</button>
                 </div>
             </div>`;
@@ -162,10 +171,10 @@
 
         allLocations.forEach(loc => {
             const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
-            // FIX: Add a tiny random jitter to prevent markers from stacking invisibly
+            const safetyColor = getColor(votes.yes, votes.no);
             const jitter = (Math.random() - 0.5) * 0.00015;
             const marker = L.marker([loc.lat + jitter, loc.lng + jitter], { 
-                icon: createMarkerIcon(getColor(votes.yes, votes.no), loc.isUserSpot) 
+                icon: createMarkerIcon(safetyColor, loc.category, loc.isUserSpot) 
             }).addTo(map);
             marker.id = loc.id;
             marker.bindPopup(generatePopupHtml(loc));
@@ -174,12 +183,11 @@
         renderAdminPanel();
     }
 
-    // Global Window functions for Leaflet Popups
     window.vote = function(id, type) {
         if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 };
         localData.votes[id][type]++;
         saveLocalData();
-        refreshPopup(id);
+        rebuildMarkers(); // Refresh marker color
     };
 
     window.addComment = function(id) {
@@ -187,16 +195,10 @@
         const text = input.value.trim();
         if (!text) return;
         if (!localData.comments[id]) localData.comments[id] = [];
-        localData.comments[id].push({ username: currentUsername, text: text.substring(0, 150), timestamp: new Date().toLocaleString() });
+        localData.comments[id].push({ username: currentUsername, text: text.substring(0, 150) });
         saveLocalData();
-        refreshPopup(id);
+        rebuildMarkers();
     };
-
-    function refreshPopup(id) {
-        const loc = allLocations.find(l => l.id === id);
-        const marker = markers.find(m => m.id === id);
-        if (marker && loc) marker.setPopupContent(generatePopupHtml(loc));
-    }
 
     function suggestUserSpot() {
         if (!pendingSpotLatLng) { alert("Click map first to set location!"); return; }
@@ -209,7 +211,7 @@
             submittedBy: currentUsername
         });
         saveLocalData();
-        alert("Suggested! If you are Admin, check the panel below.");
+        alert("Suggested! Admin will review.");
         document.getElementById("newSpotName").value = "";
         document.getElementById("newSpotDesc").value = "";
         pendingSpotLatLng = null;
@@ -224,8 +226,8 @@
             const div = document.createElement("div");
             div.className = "pending-item";
             div.innerHTML = `<div><b>${escapeHtml(p.name)}</b><br><small>${p.lat.toFixed(4)},${p.lng.toFixed(4)}</small></div>
-                <div><button onclick="approveSpot(${idx})" style="background:green;color:white;border:none;padding:5px;border-radius:5px;">Check</button>
-                <button onclick="rejectSpot(${idx})" style="background:red;color:white;border:none;padding:5px;border-radius:5px;">X</button></div>`;
+                <div><button onclick="approveSpot(${idx})" style="background:green;color:white;border:none;padding:5px 10px;border-radius:5px;">Approve</button>
+                <button onclick="rejectSpot(${idx})" style="background:red;color:white;border:none;padding:5px 10px;border-radius:5px;">X</button></div>`;
             container.appendChild(div);
         });
     }
@@ -239,7 +241,7 @@
     };
 
     window.rejectSpot = function(idx) {
-        if (confirm("Delete this suggestion?")) { localData.pendingSpots.splice(idx, 1); saveLocalData(); renderAdminPanel(); }
+        if (confirm("Reject this?")) { localData.pendingSpots.splice(idx, 1); saveLocalData(); renderAdminPanel(); }
     };
 
     function escapeHtml(str) { return str ? String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])) : ""; }
