@@ -123,6 +123,10 @@
 <script src="locations/restareas.js"></script>
 
 <script>
+    const BIN_ID = '69e921d136566621a8df20c8';
+    const API_KEY = '$2a$10$tH.4dVKocW0lJCSgG0AH8e6bPyuVgRxROY2rk4NJIw/1b59ohi622';
+    const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
     let map, markers = [];
     let localData = { 
         votes: {}, 
@@ -142,24 +146,48 @@
         return adjs[Math.floor(Math.random()*adjs.length)] + " " + nouns[Math.floor(Math.random()*nouns.length)];
     }
 
-    function initMap() {
-        const stored = localStorage.getItem("ok_safe_restored_vFINAL");
-        if (stored) { localData = JSON.parse(stored); } 
-        else { localData.userName = generateName(); save(); }
+    // CLOUD SYNC FUNCTIONS
+    async function save() {
+        try {
+            await fetch(CLOUD_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                body: JSON.stringify(localData)
+            });
+        } catch (e) { console.error("Cloud Save Failed", e); }
+    }
+
+    async function initMap() {
+        // Handle Persistent Username locally
+        let savedName = localStorage.getItem("ok_safe_user_identity");
+        if (!savedName) {
+            savedName = generateName();
+            localStorage.setItem("ok_safe_user_identity", savedName);
+        }
+        localData.userName = savedName;
         document.getElementById("userName").innerText = localData.userName;
 
+        // Initialize Map
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(map);
         
         map.on('click', (e) => {
             window.lastClick = { lat: e.latlng.lat, lng: e.latlng.lng };
-            
             L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set. Name it below & hit Suggest.</span>").openOn(map);
         });
-        render();
-    }
 
-    function save() { localStorage.setItem("ok_safe_restored_vFINAL", JSON.stringify(localData)); }
+        // Load Initial Data from Cloud
+        try {
+            const res = await fetch(`${CLOUD_URL}/latest`, { headers: { 'X-Master-Key': API_KEY } });
+            const cloud = await res.json();
+            // Merge cloud record into local state
+            Object.assign(localData, cloud.record);
+            render();
+        } catch (e) { 
+            console.error("Cloud Load Failed", e); 
+            render(); // Render empty/local if cloud fails
+        }
+    }
 
     function render() {
         markers.forEach(m => map.removeLayer(m));
@@ -175,7 +203,6 @@
         if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat, type: 'gym'}));
         if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat, type: 'rest area'}));
         
-        // Add Admin-Approved User Locations
         if (localData.approvedLocs) localData.approvedLocs.forEach(l => all.push({...l, c: '#d4c4a8', id: 'u_'+l.lat, type: 'user'}));
 
         all.forEach(loc => {
@@ -222,9 +249,13 @@
         searchMap();
     };
 
-    window.vote = (id, type) => { if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 }; localData.votes[id][type]++; save(); render(); };
+    window.vote = (id, type) => { 
+        if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 }; 
+        localData.votes[id][type]++; 
+        render(); // UI updates immediately
+        save();   // Sync to cloud
+    };
 
-    // SUBMIT NOTE FOR ADMIN REVIEW
     window.submitNoteForReview = (id, name) => {
         const v = document.getElementById(`n-${id}`).value;
         if (!v) return;
@@ -235,15 +266,21 @@
         document.getElementById(`n-${id}`).value = "";
     };
 
-    window.changeName = () => { const n = prompt("Name:", localData.userName); if (n) { localData.userName = n; document.getElementById("userName").innerText = n; save(); } };
+    window.changeName = () => { 
+        const n = prompt("Name:", localData.userName); 
+        if (n) { 
+            localData.userName = n; 
+            localStorage.setItem("ok_safe_user_identity", n);
+            document.getElementById("userName").innerText = n; 
+        } 
+    };
+
     window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
 
-    // SUGGEST SPOT FOR ADMIN REVIEW
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
         if (!name) return alert("Please type a name first!");
-        if (!window.lastClick || window.lastClick.lat == null || window.lastClick.lng == null)
-    return alert("Please click a location on the map first!");
+        if (!window.lastClick) return alert("Please click a location on the map first!");
         
         localData.pending.push({ name, lat: window.lastClick.lat.toFixed(4), lng: window.lastClick.lng.toFixed(4), user: localData.userName });
         save(); 
@@ -251,9 +288,7 @@
         document.getElementById("newSpotName").value = "";
     };
 
-    // ADMIN FUNCTIONS
     function renderAdmin() {
-        // Render Locations
         document.getElementById("pendingList").innerHTML = localData.pending.map((p, i) => `
             <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
                 <strong>${p.name}</strong> (${p.lat}, ${p.lng}) - By: ${p.user}
@@ -264,7 +299,6 @@
             </div>
         `).join('') || "No new location suggestions.";
 
-        // Render Notes
         document.getElementById("pendingNotesList").innerHTML = (localData.pendingNotes || []).map((n, i) => `
             <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
                 <strong>On ${n.locName}</strong>: "${n.text}"
