@@ -42,7 +42,7 @@
         .modal-content { position: relative; z-index: 2; }
         .continue-btn { background: #d4c4a8; color: #1a2a1f; border: none; padding: 12px 50px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; text-transform: uppercase; }
 
-        .admin-panel { background: #fff1d6; color: #333; padding: 15px; border-top: 2px solid #e0b354; display: none; }
+        .admin-panel { background: #fff1d6; color: #333; padding: 15px; border-top: 2px solid #e0b354; display: none; max-height: 400px; overflow-y: auto; }
         .footer-bar { background: #152516; color: white; padding: 12px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #d4c4a8; }
         .footer-bar input { background: #1a2a1f; border: 1px solid #3e6b40; color: white; padding: 8px; border-radius: 4px; flex: 1; }
         .stat-pill { font-size: 0.75rem; font-weight: bold; color: #d4c4a8; margin-left: auto; }
@@ -60,7 +60,7 @@
             <h2>Community Network</h2>
             <p>This is a community-based system—the more votes, the more accurate it becomes.</p>
             <p>This site is designed to show locations that will allow you to stay in your car overnight on their premises for 1 night. All info is presumed and subject to change at the companies discretion.</p>
-            <p>If you use this system please vote to strengthen the network. If you know of a location that is safe for overnight car camping please recommend the location and our admin will review.</p>
+            <p>If you use this system please vote to strengthen the network. If you know of a location that is safe for overnight car camping please suggest the location and our admin will review.</p>
             <button class="continue-btn" onclick="closeModal()">CONTINUE</button>
         </div>
     </div>
@@ -94,13 +94,21 @@
     <div class="map-container"><div id="map"></div></div>
 
     <div id="adminPanel" class="admin-panel">
-        <strong>Pending Recommendations</strong>
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <strong>Moderation Queue</strong>
+            <button onclick="document.getElementById('adminPanel').style.display='none'">Close</button>
+        </div>
+        <hr>
+        <strong>Pending Locations</strong>
         <div id="pendingList"></div>
+        <br>
+        <strong>Pending Traveler Notes</strong>
+        <div id="pendingNotesList"></div>
     </div>
 
     <div class="footer-bar">
-        <input type="text" id="newSpotName" placeholder="Business Name to Recommend">
-        <button onclick="suggestSpot()" style="background:#d4c4a8; color:#1a2a1f; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">RECOMMEND</button>
+        <input type="text" id="newSpotName" placeholder="Business Name to Suggest">
+        <button onclick="suggestSpot()" style="background:#d4c4a8; color:#1a2a1f; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">SUGGEST</button>
         <div id="stat-pill" class="stat-pill"></div>
     </div>
 </div>
@@ -116,7 +124,14 @@
 
 <script>
     let map, markers = [];
-    let localData = { votes: {}, comments: {}, pending: [], userName: "" };
+    let localData = { 
+        votes: {}, 
+        comments: {}, 
+        pending: [], 
+        pendingNotes: [], 
+        approvedLocs: [], 
+        userName: "" 
+    };
     const brandColors = { "gas": "#e21e26", "walmart": "#0071ce", "food": "#ffc107", "casino": "#7b1fa2", "med": "#00bcd4", "gym": "#f38d00", "rest": "#2e7d32" };
 
     function closeModal() { document.getElementById('welcomeOverlay').style.display = 'none'; }
@@ -138,7 +153,7 @@
         
         map.on('click', (e) => {
             window.lastClick = e.latlng;
-            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set.</span>").openOn(map);
+            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set. Name it below & hit Suggest.</span>").openOn(map);
         });
         render();
     }
@@ -158,6 +173,9 @@
         if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat, type: 'hospital'}));
         if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat, type: 'gym'}));
         if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat, type: 'rest area'}));
+        
+        // Add Admin-Approved User Locations
+        if (localData.approvedLocs) localData.approvedLocs.forEach(l => all.push({...l, c: '#d4c4a8', id: 'u_'+l.lat, type: 'user'}));
 
         all.forEach(loc => {
             const v = localData.votes[loc.id] || { yes: 0, no: 0 };
@@ -174,11 +192,11 @@
                         <button class="vote-btn" onclick="vote('${loc.id}','no')">RISKY (${v.no})</button>
                     </div>
                     <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
-                        ${comms.map(c => `• ${c}<br>`).join('') || 'No traveler notes.'}
+                        ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
                     </div>
                     <div style="display:flex; gap:5px;">
                         <input type="text" id="n-${loc.id}" placeholder="Note..." style="flex:1; background:#0b140e; border:1px solid #3e6b40; color:white; font-size:11px; padding:4px;">
-                        <button onclick="addComment('${loc.id}')" style="background:#d4c4a8; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">ADD</button>
+                        <button onclick="submitNoteForReview('${loc.id}', '${loc.name.replace(/'/g, "\\'")}')" style="background:#d4c4a8; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">ADD</button>
                     </div>
                 </div>
             `);
@@ -204,33 +222,73 @@
     };
 
     window.vote = (id, type) => { if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 }; localData.votes[id][type]++; save(); render(); };
-    window.addComment = (id) => {
+
+    // SUBMIT NOTE FOR ADMIN REVIEW
+    window.submitNoteForReview = (id, name) => {
         const v = document.getElementById(`n-${id}`).value;
         if (!v) return;
-        if (!localData.comments[id]) localData.comments[id] = [];
-        localData.comments[id].push(`${localData.userName}: ${v}`);
-        save(); render();
+        if (!localData.pendingNotes) localData.pendingNotes = [];
+        localData.pendingNotes.push({ locId: id, locName: name, text: `${localData.userName}: ${v}` });
+        save();
+        alert("Note submitted for review!");
+        document.getElementById(`n-${id}`).value = "";
     };
 
     window.changeName = () => { const n = prompt("Name:", localData.userName); if (n) { localData.userName = n; document.getElementById("userName").innerText = n; save(); } };
     window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
 
+    // SUGGEST SPOT FOR ADMIN REVIEW
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
-        if (!name || !window.lastClick) return alert("Click the map first!");
+        if (!name) return alert("Please type a name first!");
+        if (!window.lastClick) return alert("Please click a location on the map first!");
+        
         localData.pending.push({ name, lat: window.lastClick.lat.toFixed(4), lng: window.lastClick.lng.toFixed(4), user: localData.userName });
-        save(); alert("Recommendation received!");
+        save(); 
+        alert("Suggestion submitted for review!");
         document.getElementById("newSpotName").value = "";
     };
 
+    // ADMIN FUNCTIONS
     function renderAdmin() {
+        // Render Locations
         document.getElementById("pendingList").innerHTML = localData.pending.map((p, i) => `
             <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
                 <strong>${p.name}</strong> (${p.lat}, ${p.lng}) - By: ${p.user}
-                <button onclick="localData.pending.splice(${i},1); save(); renderAdmin();" style="display:block; margin-top:5px; background:red; color:white; border:none; padding:3px 8px; cursor:pointer;">DELETE</button>
+                <div style="margin-top:5px;">
+                    <button onclick="approveLoc(${i})" style="background:green; color:white; border:none; padding:3px 8px; cursor:pointer;">APPROVE</button>
+                    <button onclick="localData.pending.splice(${i},1); save(); renderAdmin();" style="background:red; color:white; border:none; padding:3px 8px; cursor:pointer;">DELETE</button>
+                </div>
             </div>
-        `).join('') || "No new suggestions.";
+        `).join('') || "No new location suggestions.";
+
+        // Render Notes
+        document.getElementById("pendingNotesList").innerHTML = (localData.pendingNotes || []).map((n, i) => `
+            <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
+                <strong>On ${n.locName}</strong>: "${n.text}"
+                <div style="margin-top:5px;">
+                    <button onclick="approveNote(${i})" style="background:green; color:white; border:none; padding:3px 8px; cursor:pointer;">APPROVE</button>
+                    <button onclick="localData.pendingNotes.splice(${i},1); save(); renderAdmin();" style="background:red; color:white; border:none; padding:3px 8px; cursor:pointer;">DELETE</button>
+                </div>
+            </div>
+        `).join('') || "No new traveler notes.";
     }
+
+    window.approveLoc = (i) => {
+        const p = localData.pending[i];
+        if (!localData.approvedLocs) localData.approvedLocs = [];
+        localData.approvedLocs.push(p);
+        localData.pending.splice(i, 1);
+        save(); render(); renderAdmin();
+    };
+
+    window.approveNote = (i) => {
+        const n = localData.pendingNotes[i];
+        if (!localData.comments[n.locId]) localData.comments[n.locId] = [];
+        localData.comments[n.locId].push(n.text);
+        localData.pendingNotes.splice(i, 1);
+        save(); render(); renderAdmin();
+    };
 
     window.onload = initMap;
 </script>
