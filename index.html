@@ -35,7 +35,6 @@
         .map-container { height: calc(100vh - 265px); width: 100%; position: relative; }
         #map { height: 100%; width: 100%; background: #0e1626; }
         
-        /* MODAL */
         #welcomeOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .modal-box { position: relative; background: #1a2a1f; color: #f5f3e8; border: 2px solid #d4c4a8; padding: 40px 30px; border-radius: 20px; max-width: 500px; text-align: center; overflow: hidden; }
         .modal-logo-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; opacity: 0.15; pointer-events: none; z-index: 1; }
@@ -48,20 +47,7 @@
         .stat-pill { font-size: 0.75rem; font-weight: bold; color: #d4c4a8; margin-left: auto; }
         
         .leaflet-popup-content-wrapper { background: #1a2a1f; color: white; border: 1px solid #d4c4a8; }
-        
-        .vote-btn { 
-            cursor: pointer; 
-            border: 1px solid #3e6b40; 
-            background: #2c5e2e; 
-            color: white; 
-            padding: 6px; 
-            border-radius: 6px; 
-            flex: 1; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 5px; 
-        }
+        .vote-btn { cursor: pointer; border: 1px solid #3e6b40; background: #2c5e2e; color: white; padding: 6px; border-radius: 6px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .vote-btn img { width: 16px; height: 16px; }
     </style>
 </head>
@@ -137,9 +123,6 @@
 <script src="locations/restareas.js"></script>
 
 <script>
-    const THUMBS_UP_URL = "https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true";
-    const THUMBS_DOWN_URL = "https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true";
-    
     const BIN_ID = '69e921d136566621a8df20c8';
     const API_KEY = '$2a$10$tH.4dVKocW0lJCSgG0AH8e6bPyuVgRxROY2rk4NJIw/1b59ohi622';
     const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -185,9 +168,11 @@
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(map);
         
+        // Optional: still allow click to set exact spot, but not required for suggest
         map.on('click', (e) => {
             window.lastClick = { lat: e.latlng.lat, lng: e.latlng.lng };
-            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set. Name it below & hit Suggest.</span>").openOn(map);
+            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Location set. You can now suggest a spot.</span>").openOn(map);
+            setTimeout(() => map.closePopup(), 1500);
         });
 
         try {
@@ -228,8 +213,8 @@
                 <div style="min-width:200px;">
                     <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
                     <div style="display:flex; gap:5px; margin-top:8px;">
-                        <button class="vote-btn" onclick="vote('${loc.id}','yes')"><img src="${THUMBS_UP_URL}" alt="👍"> SAFE (${v.yes})</button>
-                        <button class="vote-btn" onclick="vote('${loc.id}','no')"><img src="${THUMBS_DOWN_URL}" alt="👎"> RISKY (${v.no})</button>
+                        <button class="vote-btn" onclick="vote('${loc.id}','yes')"><img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true"> SAFE (${v.yes})</button>
+                        <button class="vote-btn" onclick="vote('${loc.id}','no')"><img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true"> RISKY (${v.no})</button>
                     </div>
                     <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
                         ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
@@ -289,19 +274,29 @@
 
     window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
 
+    // FIXED: suggestSpot works WITHOUT requiring a map click
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
-        if (!name) return alert("Please type a name first!");
-        if (!window.lastClick) return alert("Please click a location on the map first!");
+        if (!name) return alert("Please type a business name first!");
         
-        localData.pending.push({ name, lat: window.lastClick.lat.toFixed(4), lng: window.lastClick.lng.toFixed(4), user: localData.userName });
+        let lat, lng;
+        if (window.lastClick && window.lastClick.lat) {
+            lat = window.lastClick.lat;
+            lng = window.lastClick.lng;
+        } else {
+            const center = map.getCenter();
+            lat = center.lat;
+            lng = center.lng;
+        }
+        
+        localData.pending.push({ name, lat: lat.toFixed(5), lng: lng.toFixed(5), user: localData.userName });
         save(); 
         alert("Suggestion submitted for review!");
         document.getElementById("newSpotName").value = "";
     };
 
     function renderAdmin() {
-        document.getElementById("pendingList").innerHTML = localData.pending.map((p, i) => `
+        document.getElementById("pendingList").innerHTML = (localData.pending || []).map((p, i) => `
             <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
                 <strong>${p.name}</strong> (${p.lat}, ${p.lng}) - By: ${p.user}
                 <div style="margin-top:5px;">
