@@ -10,10 +10,8 @@
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { margin: 0; padding: 15px; background: #0b140e; display: flex; justify-content: center; }
-        
         .container { max-width: 1400px; width: 100%; background: #1a2a1f; border-radius: 20px; overflow: hidden; border: 2px solid #d4c4a8; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         
-        /* HEADER & UI */
         .header { background: #d4c4a8; color: #1a2a1f; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #bba886; }
         .logo-area { display: flex; align-items: center; gap: 12px; }
         .logo-img { height: 45px; width: auto; }
@@ -23,7 +21,6 @@
         .search-box { background: #f5f3e8; color: #1a2a1f; border: 1px solid #bba886; padding: 8px 15px; border-radius: 20px; width: 220px; font-size: 0.85rem; z-index: 10; }
         #search-prompt { position: absolute; left: 15px; color: #888; font-size: 0.8rem; pointer-events: none; z-index: 11; }
 
-        /* FILTER CHIPS */
         .filter-bar { background: #c5b596; padding: 8px 20px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #bba886; }
         .filter-chip { color: #f5f3e8; padding: 5px 14px; border-radius: 15px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(0,0,0,0.2); white-space: nowrap; font-weight: bold; }
         .chip-all { background: #1a2a1f; }
@@ -38,59 +35,32 @@
         .map-container { height: calc(100vh - 265px); width: 100%; position: relative; }
         #map { height: 100%; width: 100%; background: #0e1626; }
         
-        /* THE MODAL WITH BACKGROUND LOGO */
-        #welcomeOverlay { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.9); z-index: 9999; 
-            display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-box { 
-            position: relative;
-            background: #1a2a1f; color: #f5f3e8; border: 2px solid #d4c4a8; 
-            padding: 40px 30px; border-radius: 20px; max-width: 500px; text-align: center;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
-            overflow: hidden; /* Keeps logo inside corners */
-        }
-        .modal-logo-bg {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            opacity: 0.08; /* Subtly faded in the background */
-            pointer-events: none;
-            z-index: 1;
-        }
-        .modal-content {
-            position: relative;
-            z-index: 2; /* Sits on top of the logo */
-        }
-        .modal-box h2 { color: #d4c4a8; text-transform: uppercase; margin-top: 0; letter-spacing: 2px; }
-        .modal-box p { line-height: 1.6; font-size: 1rem; color: #ced4cd; margin-bottom: 15px; }
-        
-        .continue-btn { 
-            background: #d4c4a8; color: #1a2a1f; border: none; padding: 12px 50px; 
-            border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px;
-            text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;
-        }
-        .continue-btn:hover { background: #fff; transform: scale(1.05); }
+        /* MODAL */
+        #welcomeOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { position: relative; background: #1a2a1f; color: #f5f3e8; border: 2px solid #d4c4a8; padding: 40px 30px; border-radius: 20px; max-width: 500px; text-align: center; overflow: hidden; }
+        .modal-logo-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; opacity: 0.15; pointer-events: none; z-index: 1; }
+        .modal-content { position: relative; z-index: 2; }
+        .continue-btn { background: #d4c4a8; color: #1a2a1f; border: none; padding: 12px 50px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; text-transform: uppercase; }
 
+        .admin-panel { background: #fff1d6; color: #333; padding: 15px; border-top: 2px solid #e0b354; display: none; }
         .footer-bar { background: #152516; color: white; padding: 12px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #d4c4a8; }
         .footer-bar input { background: #1a2a1f; border: 1px solid #3e6b40; color: white; padding: 8px; border-radius: 4px; flex: 1; }
         .stat-pill { font-size: 0.75rem; font-weight: bold; color: #d4c4a8; margin-left: auto; }
+        
         .leaflet-popup-content-wrapper { background: #1a2a1f; color: white; border: 1px solid #d4c4a8; }
+        .vote-btn { cursor: pointer; border: 1px solid #3e6b40; background: #2c5e2e; color: white; padding: 6px; border-radius: 6px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; }
     </style>
 </head>
 <body>
 
 <div id="welcomeOverlay">
     <div class="modal-box">
-        <img src="logo.png" class="modal-logo-bg" alt="">
-        
+        <img src="logo.png" class="modal-logo-bg">
         <div class="modal-content">
             <h2>Community Network</h2>
             <p>This is a community-based system—the more votes, the more accurate it becomes.</p>
-            <p>This site is designed to show locations that may allow you to stay in your car overnight on their premises for one night. <strong>All info is presumed and subject to change at the company's discretion.</strong></p>
-            <p>If you know of a safe location, please "Recommend" it for admin review. To strengthen the network, please vote on the spots you visit!</p>
+            <p>This site is designed to show locations that will allow you to stay in your car overnight on their premises for 1 night. All info is presumed and subject to change at the companies discretion.</p>
+            <p>If you use this system please vote to strengthen the network. If you know of a location that is safe for overnight car camping please recommend the location and our admin will review.</p>
             <button class="continue-btn" onclick="closeModal()">CONTINUE</button>
         </div>
     </div>
@@ -98,10 +68,7 @@
 
 <div class="container">
     <div class="header">
-        <div class="logo-area">
-            <img src="logo.png" alt="Logo" class="logo-img">
-            <h1>OK Safe Parking</h1>
-        </div>
+        <div class="logo-area"><img src="logo.png" class="logo-img"><h1>OK Safe Parking</h1></div>
         <div style="background: rgba(0,0,0,0.1); padding: 5px 15px; border-radius: 40px; display: flex; align-items: center; gap: 10px; font-size: 0.8rem;">
             <span id="userName" style="color:#1a2a1f; font-weight:bold;">...</span>
             <button onclick="changeName()" style="background:#1a2a1f; color:#f5f3e8; border:none; padding:2px 8px; border-radius:10px; font-size:0.7rem; cursor:pointer;">EDIT</button>
@@ -126,8 +93,13 @@
 
     <div class="map-container"><div id="map"></div></div>
 
+    <div id="adminPanel" class="admin-panel">
+        <strong>Pending Recommendations</strong>
+        <div id="pendingList"></div>
+    </div>
+
     <div class="footer-bar">
-        <input type="text" id="newSpotName" placeholder="Business Name to Suggest">
+        <input type="text" id="newSpotName" placeholder="Business Name to Recommend">
         <button onclick="suggestSpot()" style="background:#d4c4a8; color:#1a2a1f; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">RECOMMEND</button>
         <div id="stat-pill" class="stat-pill"></div>
     </div>
@@ -149,51 +121,69 @@
 
     function closeModal() { document.getElementById('welcomeOverlay').style.display = 'none'; }
 
+    function generateName() {
+        const adjs = ["Silent", "Wild", "Brave", "Dusty", "Swift", "Calm", "Golden", "Red", "Lone"];
+        const nouns = ["Traveler", "Nomad", "Wanderer", "Explorer", "Driver", "Camper"];
+        return adjs[Math.floor(Math.random()*adjs.length)] + " " + nouns[Math.floor(Math.random()*nouns.length)];
+    }
+
     function initMap() {
-        const stored = localStorage.getItem("ok_safe_watermark_v1");
+        const stored = localStorage.getItem("ok_safe_restored_vFINAL");
         if (stored) { localData = JSON.parse(stored); } 
         else { localData.userName = generateName(); save(); }
-        
         document.getElementById("userName").innerText = localData.userName;
+
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(map);
         
         map.on('click', (e) => {
             window.lastClick = e.latlng;
-            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Location Targeted.</span>").openOn(map);
+            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set.</span>").openOn(map);
         });
         render();
     }
 
-    function generateName() {
-        const adjs = ["Silent", "Wild", "Brave", "Dusty", "Swift", "Calm", "Golden", "Red", "Lone", "Happy", "Steady", "Misty"];
-        const nouns = ["Traveler", "Nomad", "Wanderer", "Explorer", "Driver", "Camper", "Ranger", "Pathfinder", "Scout", "Voyager"];
-        return adjs[Math.floor(Math.random()*adjs.length)] + " " + nouns[Math.floor(Math.random()*nouns.length)];
-    }
-
-    function save() { localStorage.setItem("ok_safe_watermark_v1", JSON.stringify(localData)); }
+    function save() { localStorage.setItem("ok_safe_restored_vFINAL", JSON.stringify(localData)); }
 
     function render() {
         markers.forEach(m => map.removeLayer(m));
         markers = [];
         let all = [];
-        // [Location Data Loops - Same as before]
-        if (typeof walmartLocations !== 'undefined') walmartLocations.forEach(l => all.push({...l, c: brandColors.walmart, id: 'w_'+l.lat}));
+
+        if (typeof walmartLocations !== 'undefined') walmartLocations.forEach(l => all.push({...l, c: brandColors.walmart, id: 'w_'+l.lat, type: 'walmart'}));
         if (typeof lovesLocations !== 'undefined') lovesLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'l_'+l.lat, type: 'gas'}));
         if (typeof pilotLocations !== 'undefined') pilotLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'p_'+l.lat, type: 'gas'}));
-        if (typeof crackerBarrelLocations !== 'undefined') crackerBarrelLocations.forEach(l => all.push({...l, l_type: 'cracker barrel', c: brandColors.food, id: 'cb_'+l.lat}));
-        if (typeof casinoLocations !== 'undefined') casinoLocations.forEach(l => all.push({...l, c: brandColors.casino, id: 'cas_'+l.lat}));
-        if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat}));
-        if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat}));
-        if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, l_type: 'rest area', c: brandColors.rest, id: 'r_'+l.lat}));
+        if (typeof crackerBarrelLocations !== 'undefined') crackerBarrelLocations.forEach(l => all.push({...l, c: brandColors.food, id: 'cb_'+l.lat, type: 'cracker barrel'}));
+        if (typeof casinoLocations !== 'undefined') casinoLocations.forEach(l => all.push({...l, c: brandColors.casino, id: 'cas_'+l.lat, type: 'casino'}));
+        if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat, type: 'hospital'}));
+        if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat, type: 'gym'}));
+        if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat, type: 'rest area'}));
 
         all.forEach(loc => {
+            const v = localData.votes[loc.id] || { yes: 0, no: 0 };
+            const comms = localData.comments[loc.id] || [];
             const marker = L.marker([loc.lat, loc.lng], {
                 icon: L.divIcon({ html: `<div style="background:${loc.c}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`, className: '', iconSize: [16,16] })
             }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="min-width:200px;">
+                    <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
+                    <div style="display:flex; gap:5px; margin-top:8px;">
+                        <button class="vote-btn" onclick="vote('${loc.id}','yes')">SAFE (${v.yes})</button>
+                        <button class="vote-btn" onclick="vote('${loc.id}','no')">RISKY (${v.no})</button>
+                    </div>
+                    <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
+                        ${comms.map(c => `• ${c}<br>`).join('') || 'No traveler notes.'}
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="n-${loc.id}" placeholder="Note..." style="flex:1; background:#0b140e; border:1px solid #3e6b40; color:white; font-size:11px; padding:4px;">
+                        <button onclick="addComment('${loc.id}')" style="background:#d4c4a8; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">ADD</button>
+                    </div>
+                </div>
+            `);
             marker.name = loc.name.toLowerCase();
-            marker.city = (loc.city || "").toLowerCase();
-            marker.type = (loc.type || loc.l_type || "").toLowerCase();
+            marker.type = loc.type;
             markers.push(marker);
         });
         document.getElementById('stat-pill').innerText = all.length + " SPOTS ONLINE";
@@ -201,7 +191,10 @@
 
     window.searchMap = () => {
         const q = document.getElementById("mapSearch").value.toLowerCase();
-        markers.forEach(m => { (m.name.includes(q) || m.city.includes(q) || m.type === q) ? m.addTo(map) : map.removeLayer(m); });
+        markers.forEach(m => {
+            if (q === 'gas') { (m.type === 'gas' || m.name.includes('loves') || m.name.includes('pilot')) ? m.addTo(map) : map.removeLayer(m); }
+            else { (m.name.includes(q) || m.type === q) ? m.addTo(map) : map.removeLayer(m); }
+        });
     };
 
     window.quickFilter = (q) => {
@@ -209,6 +202,18 @@
         document.getElementById('search-prompt').style.display = q === '' ? 'block' : 'none';
         searchMap();
     };
+
+    window.vote = (id, type) => { if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 }; localData.votes[id][type]++; save(); render(); };
+    window.addComment = (id) => {
+        const v = document.getElementById(`n-${id}`).value;
+        if (!v) return;
+        if (!localData.comments[id]) localData.comments[id] = [];
+        localData.comments[id].push(`${localData.userName}: ${v}`);
+        save(); render();
+    };
+
+    window.changeName = () => { const n = prompt("Name:", localData.userName); if (n) { localData.userName = n; document.getElementById("userName").innerText = n; save(); } };
+    window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
 
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
@@ -218,7 +223,15 @@
         document.getElementById("newSpotName").value = "";
     };
 
-    window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { alert("Admin panel visible."); } };
+    function renderAdmin() {
+        document.getElementById("pendingList").innerHTML = localData.pending.map((p, i) => `
+            <div style="background:white; padding:10px; margin-top:8px; border:1px solid #ccc; font-size:0.8rem; border-radius:4px;">
+                <strong>${p.name}</strong> (${p.lat}, ${p.lng}) - By: ${p.user}
+                <button onclick="localData.pending.splice(${i},1); save(); renderAdmin();" style="display:block; margin-top:5px; background:red; color:white; border:none; padding:3px 8px; cursor:pointer;">DELETE</button>
+            </div>
+        `).join('') || "No new suggestions.";
+    }
+
     window.onload = initMap;
 </script>
 </body>
