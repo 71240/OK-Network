@@ -11,12 +11,11 @@
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { margin: 0; padding: 20px; background: #1a2a1f; display: flex; justify-content: center; }
         .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 32px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .header { background: #2c5e2e; color: white; padding: 16px 24px; display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; }
+        .header { background: #2c5e2e; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
         .logo-area { display: flex; align-items: center; gap: 12px; }
         .logo-img { height: 45px; width: auto; }
         h1 { margin: 0; font-size: 1.4rem; }
-        .sub { font-style: italic; opacity: 0.9; font-size: 0.8rem; }
-        .user-area { background: #1f3b20; padding: 8px 16px; border-radius: 60px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .user-area { background: #1f3b20; padding: 8px 16px; border-radius: 60px; display: flex; gap: 12px; align-items: center; }
         .username-display { background: #e9b35f; color: #1e2a1a; padding: 5px 12px; border-radius: 40px; font-weight: bold; font-size: 0.9rem; }
         .change-name-btn, .admin-btn, .export-btn { border: none; padding: 6px 14px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
         .change-name-btn { background: #f5bc70; }
@@ -24,15 +23,13 @@
         .export-btn { background: #4a6fa5; color: white; }
         .map-container { height: calc(100vh - 220px); min-height: 450px; width: 100%; position: relative; }
         #map { height: 100%; width: 100%; background: #c8e0d0; }
-        .add-spot-bar { background: #e8f0fe; padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-top: 1px solid #ccc; }
+        .add-spot-bar { background: #e8f0fe; padding: 12px 20px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ccc; }
         .add-spot-bar input { padding: 8px 16px; border-radius: 30px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
         .add-spot-bar button { background: #2c5e2e; color: white; border: none; padding: 8px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; }
-        .admin-panel { background: #fff1d6; padding: 12px 20px; border-top: 2px solid #e0b354; display: none; max-height: 200px; overflow-y: auto; }
-        .pending-item { background: white; padding: 10px 15px; margin: 8px 0; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; font-size: 0.85rem; }
+        .admin-panel { background: #fff1d6; padding: 12px 20px; border-top: 2px solid #e0b354; display: none; }
         .popup-comments { max-height: 120px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px; font-size: 0.85rem; }
-        .comment-item { border-bottom: 1px solid #eee; padding: 5px 0; }
-        .warning { background: #fff1c1; padding: 6px 20px; text-align: center; font-size: 0.7rem; border-top: 1px solid #eee; }
-        .vote-btn { background: none; border: 1px solid #ccc; cursor: pointer; padding: 4px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+        .vote-btn { background: #fff; border: 1px solid #ccc; cursor: pointer; padding: 6px; border-radius: 8px; font-size: 0.9rem; }
+        .warning { background: #fff1c1; padding: 6px 20px; text-align: center; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -40,7 +37,7 @@
     <div class="header">
         <div class="logo-area">
             <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
-            <div><h1>🌙 OK Safe Parking</h1><div class="sub">Color-coded markers show brand and safety</div></div>
+            <div><h1>🌙 OK Safe Parking</h1></div>
         </div>
         <div class="user-area">
             <span id="usernameSpan" class="username-display">...</span>
@@ -56,15 +53,10 @@
         <input type="text" id="newSpotName" placeholder="Business Name">
         <input type="text" id="newSpotDesc" placeholder="Address/Details">
         <button id="addSpotBtn">➕ Suggest Spot</button>
-        <small>📍 Click map first to drop pin</small>
     </div>
     
-    <div id="adminPanel" class="admin-panel">
-        <strong>🛠 Pending Reviews</strong>
-        <div id="pendingList"></div>
-    </div>
-    
-    <div class="warning">⚠️ Verify signs locally. Information is community-sourced. Stay safe.</div>
+    <div id="adminPanel" class="admin-panel"><div id="pendingList"></div></div>
+    <div class="warning">⚠️ Community Sourced - Check signs locally.</div>
 </div>
 
 <script src="locations/walmart.js"></script>
@@ -84,16 +76,17 @@
     let isAdminMode = false;
     let localData = { votes: {}, comments: {}, approvedSpots: [], pendingSpots: [] };
 
+    // HIGH CONTRAST SOLID COLORS
     const categoryColors = {
-        "Walmart": "#0071ce",
-        "Loves": "#e21e26",
-        "Cracker Barrel": "#5e3a24",
-        "Pilot": "#ff8200",
-        "Casino": "#7b1fa2",
-        "Hospital": "#1976d2",
-        "Gym": "#455a64",
-        "Rest Area": "#2e7d32",
-        "Community Spot": "#2c5e2e"
+        "walmart": "#0071ce",         // Blue
+        "loves": "#e21e26",           // Red
+        "cracker barrel": "#5e3a24",  // Brown
+        "pilot": "#ff8200",           // Orange
+        "casino": "#7b1fa2",          // Purple
+        "hospital": "#00bcd4",        // Cyan (Distinct from Walmart Blue)
+        "gym": "#455a64",             // Slate Gray
+        "rest area": "#2e7d32",       // Dark Green
+        "community spot": "#000000"   // Black
     };
 
     function loadLocalData() {
@@ -117,49 +110,44 @@
         if (typeof hospitalLocations !== 'undefined') combined.push(...hospitalLocations);
         if (typeof gymLocations !== 'undefined') combined.push(...gymLocations);
         if (typeof restAreaLocations !== 'undefined') combined.push(...restAreaLocations);
-        
-        localData.approvedSpots.forEach(s => {
-            combined.push({...s, category: s.category || "Community Spot", isUserSpot: true});
-        });
-
+        localData.approvedSpots.forEach(s => combined.push({...s, category: s.category || "community spot"}));
         return combined.map(loc => ({ ...loc, id: loc.id || `${loc.lat}_${loc.lng}` }));
     }
 
-    function getColor(yes, no) {
-        if (yes > 0 && no === 0) return "#2e7d32"; // Green
-        if (no > 0 && yes === 0) return "#c62828"; // Red
-        if (yes > 0 && no > 0) return "#f9a825";   // Orange/Yellow
-        return "#ffffff"; // White (Neutral)
-    }
-
-    function createMarkerIcon(safetyColor, category, isUserSpot = false) {
-        const brandColor = categoryColors[category] || "#666";
-        const size = isUserSpot ? 22 : 18;
+    function createMarkerIcon(category) {
+        const lookup = String(category).toLowerCase();
+        const color = categoryColors[lookup] || "#666"; 
+        
         return L.divIcon({
-            html: `<div style="background-color:${safetyColor}; width:${size}px; height:${size}px; border-radius:50%; border:3px solid ${brandColor}; box-shadow:0 2px 5px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-size:10px;">${isUserSpot ? '👤' : ''}</div>`,
-            iconSize: [size, size], popupAnchor: [0, -size/2]
+            html: `<div style="
+                background-color: ${color}; 
+                width: 18px; 
+                height: 18px; 
+                border-radius: 50%; 
+                border: 2px solid white; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+            </div>`,
+            iconSize: [18, 18],
+            popupAnchor: [0, -9]
         });
     }
 
     function generatePopupHtml(loc) {
         const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
         const comments = localData.comments[loc.id] || [];
-        const commentsHtml = comments.length === 0 ? '<em>No notes yet.</em>' : 
-            comments.slice().reverse().map(c => `<div class="comment-item"><b>${escapeHtml(c.username)}:</b> ${escapeHtml(c.text)}</div>`).join('');
+        const status = votes.yes > votes.no ? "✅ Safe" : (votes.no > votes.yes ? "⚠️ Risky" : "❔ Unknown");
         
         return `
-            <div style="min-width: 220px; max-width: 250px;">
-                <b style="font-size: 1rem;">${escapeHtml(loc.name)}</b><br>
-                <small style="color: #666;">${escapeHtml(loc.city)} • ${escapeHtml(loc.category)}</small>
-                <div style="margin: 10px 0; display: flex; justify-content: space-around; background: #eee; padding: 5px; border-radius: 10px;">
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')"><img src="ThumbsUp.png" width="16" onerror="this.src='https://cdn-icons-png.flaticon.com/16/179/179655.png'"> ${votes.yes}</button>
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')"><img src="ThumbsDown.png" width="16" onerror="this.src='https://cdn-icons-png.flaticon.com/16/179/179656.png'"> ${votes.no}</button>
+            <div style="min-width: 200px;">
+                <b>${loc.name}</b> [${status}]<br>
+                <small>${loc.category}</small>
+                <div style="margin: 10px 0; display: flex; gap: 10px;">
+                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')">👍 ${votes.yes}</button>
+                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')">👎 ${votes.no}</button>
                 </div>
-                <div class="popup-comments">${commentsHtml}</div>
-                <div style="margin-top:8px; display:flex; gap:5px;">
-                    <input type="text" id="comment-input-${loc.id}" placeholder="Add note..." style="flex:1; padding:4px; border-radius:4px; border:1px solid #ccc;">
-                    <button onclick="window.addComment('${loc.id}')" style="background:#2c5e2e; color:white; border:none; border-radius:4px; padding:2px 8px;">Go</button>
-                </div>
+                <div class="popup-comments">${comments.length ? comments.slice(-3).map(c => `<div>- ${c.text}</div>`).join('') : 'No notes.'}</div>
+                <input type="text" id="in-${loc.id}" placeholder="Add note..." style="width:70%; margin-top:5px;">
+                <button onclick="window.addComment('${loc.id}')">Go</button>
             </div>`;
     }
 
@@ -170,82 +158,38 @@
         allLocations = combineAllLocations();
 
         allLocations.forEach(loc => {
-            const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
-            const safetyColor = getColor(votes.yes, votes.no);
-            const jitter = (Math.random() - 0.5) * 0.00015;
+            const jitter = (Math.random() - 0.5) * 0.0002; // Prevents stacking
             const marker = L.marker([loc.lat + jitter, loc.lng + jitter], { 
-                icon: createMarkerIcon(safetyColor, loc.category, loc.isUserSpot) 
+                icon: createMarkerIcon(loc.category) 
             }).addTo(map);
             marker.id = loc.id;
             marker.bindPopup(generatePopupHtml(loc));
             markers.push(marker);
         });
-        renderAdminPanel();
     }
 
     window.vote = function(id, type) {
         if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 };
         localData.votes[id][type]++;
         saveLocalData();
-        rebuildMarkers(); // Refresh marker color
+        refreshPopup(id);
     };
 
     window.addComment = function(id) {
-        const input = document.getElementById(`comment-input-${id}`);
-        const text = input.value.trim();
-        if (!text) return;
+        const val = document.getElementById(`in-${id}`).value.trim();
+        if (!val) return;
         if (!localData.comments[id]) localData.comments[id] = [];
-        localData.comments[id].push({ username: currentUsername, text: text.substring(0, 150) });
+        localData.comments[id].push({ text: val });
         saveLocalData();
-        rebuildMarkers();
+        refreshPopup(id);
     };
 
-    function suggestUserSpot() {
-        if (!pendingSpotLatLng) { alert("Click map first to set location!"); return; }
-        const name = document.getElementById("newSpotName").value.trim();
-        if (!name) return alert("Enter business name");
-        localData.pendingSpots.push({
-            id: "pending_" + Date.now(), name: name, 
-            description: document.getElementById("newSpotDesc").value.trim() || "Community suggestion",
-            lat: pendingSpotLatLng.lat, lng: pendingSpotLatLng.lng,
-            submittedBy: currentUsername
-        });
-        saveLocalData();
-        alert("Suggested! Admin will review.");
-        document.getElementById("newSpotName").value = "";
-        document.getElementById("newSpotDesc").value = "";
-        pendingSpotLatLng = null;
-        if (isAdminMode) renderAdminPanel();
+    function refreshPopup(id) {
+        const loc = allLocations.find(l => l.id === id);
+        const marker = markers.find(m => m.id === id);
+        if (marker && loc) marker.setPopupContent(generatePopupHtml(loc));
     }
 
-    function renderAdminPanel() {
-        const container = document.getElementById("pendingList");
-        if (!container || !isAdminMode) return;
-        container.innerHTML = localData.pendingSpots.length === 0 ? "<em>None</em>" : "";
-        localData.pendingSpots.forEach((p, idx) => {
-            const div = document.createElement("div");
-            div.className = "pending-item";
-            div.innerHTML = `<div><b>${escapeHtml(p.name)}</b><br><small>${p.lat.toFixed(4)},${p.lng.toFixed(4)}</small></div>
-                <div><button onclick="approveSpot(${idx})" style="background:green;color:white;border:none;padding:5px 10px;border-radius:5px;">Approve</button>
-                <button onclick="rejectSpot(${idx})" style="background:red;color:white;border:none;padding:5px 10px;border-radius:5px;">X</button></div>`;
-            container.appendChild(div);
-        });
-    }
-
-    window.approveSpot = function(idx) {
-        const p = localData.pendingSpots[idx];
-        localData.approvedSpots.push({ id: "user_"+Date.now(), name: p.name, category: p.description, lat: p.lat, lng: p.lng, city: "OK" });
-        localData.pendingSpots.splice(idx, 1);
-        saveLocalData();
-        rebuildMarkers();
-    };
-
-    window.rejectSpot = function(idx) {
-        if (confirm("Reject this?")) { localData.pendingSpots.splice(idx, 1); saveLocalData(); renderAdminPanel(); }
-    };
-
-    function escapeHtml(str) { return str ? String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])) : ""; }
-    
     function init() {
         loadLocalData();
         const storedName = localStorage.getItem("ok_username");
@@ -253,40 +197,27 @@
         document.getElementById("usernameSpan").innerText = currentUsername;
 
         map = L.map('map').setView([35.5, -97.2], 7);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OSM' }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
         
         map.on('click', (e) => {
             pendingSpotLatLng = e.latlng;
-            L.popup().setLatLng(e.latlng).setContent("📍 Location set! Ready to suggest.").openOn(map);
+            L.popup().setLatLng(e.latlng).setContent("📍 Click 'Suggest Spot' to add this location.").openOn(map);
         });
 
         rebuildMarkers();
 
-        document.getElementById("changeNameBtn").onclick = () => {
-            let n = prompt("New name:");
-            if (n) { currentUsername = n.trim().substring(0, 20); localStorage.setItem("ok_username", currentUsername); document.getElementById("usernameSpan").innerText = currentUsername; }
-        };
-
-        document.getElementById("addSpotBtn").onclick = suggestUserSpot;
-        document.getElementById("exportCsvBtn").onclick = () => {
-            let rows = [["Name", "Lat", "Lng", "Yes", "No"]];
-            allLocations.forEach(l => {
-                const v = localData.votes[l.id] || {yes:0, no:0};
-                rows.push([l.name, l.lat, l.lng, v.yes, v.no]);
-            });
-            let csv = rows.map(r => r.join(",")).join("\n");
-            let link = document.createElement("a");
-            link.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-            link.download = "parking_data.csv";
-            link.click();
+        document.getElementById("addSpotBtn").onclick = () => {
+            if (!pendingSpotLatLng) return alert("Tap map first");
+            const name = document.getElementById("newSpotName").value;
+            localData.pendingSpots.push({ name, lat: pendingSpotLatLng.lat, lng: pendingSpotLatLng.lng });
+            saveLocalData();
+            alert("Suggested!");
         };
 
         document.getElementById("adminToggleBtn").onclick = () => {
-            if (isAdminMode) { isAdminMode = false; document.getElementById("adminPanel").style.display = "none"; return; }
-            if (prompt("Password:") === "okcadmin2025") {
+            if (prompt("Pass:") === "okcadmin2025") {
                 isAdminMode = true;
                 document.getElementById("adminPanel").style.display = "block";
-                renderAdminPanel();
             }
         };
     }
