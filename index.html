@@ -4,59 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>OK Safe Parking Network</title>
-    <link rel="icon" href="Favicon.png" type="image/png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-        body { margin: 0; padding: 20px; background: #1a2a1f; display: flex; justify-content: center; }
-        .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 32px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .header { background: #2c5e2e; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .logo-area { display: flex; align-items: center; gap: 12px; }
-        .logo-img { height: 45px; width: auto; }
-        h1 { margin: 0; font-size: 1.4rem; }
-        .user-area { background: #1f3b20; padding: 8px 16px; border-radius: 60px; display: flex; gap: 12px; align-items: center; }
-        .username-display { background: #e9b35f; color: #1e2a1a; padding: 5px 12px; border-radius: 40px; font-weight: bold; font-size: 0.9rem; }
-        .change-name-btn, .admin-btn, .export-btn { border: none; padding: 6px 14px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
-        .change-name-btn { background: #f5bc70; }
-        .admin-btn { background: #ffaa44; }
-        .export-btn { background: #4a6fa5; color: white; }
-        .map-container { height: calc(100vh - 220px); min-height: 450px; width: 100%; position: relative; }
+        body { margin: 0; padding: 15px; background: #1a2a1f; display: flex; justify-content: center; }
+        .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 20px; overflow: hidden; border: 2px solid #2c5e2e; }
+        .header { background: #2c5e2e; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .map-container { height: calc(100vh - 180px); width: 100%; }
         #map { height: 100%; width: 100%; background: #c8e0d0; }
-        .add-spot-bar { background: #e8f0fe; padding: 12px 20px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ccc; }
-        .add-spot-bar input { padding: 8px 16px; border-radius: 30px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
-        .add-spot-bar button { background: #2c5e2e; color: white; border: none; padding: 8px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; }
-        .admin-panel { background: #fff1d6; padding: 12px 20px; border-top: 2px solid #e0b354; display: none; }
-        .popup-comments { max-height: 120px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 8px; font-size: 0.85rem; }
-        .vote-btn { background: #fff; border: 1px solid #ccc; cursor: pointer; padding: 6px; border-radius: 8px; font-size: 0.9rem; }
-        .warning { background: #fff1c1; padding: 6px 20px; text-align: center; font-size: 0.7rem; }
+        .add-spot-bar { background: #e8f0fe; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ccc; }
+        .debug-bar { background: #333; color: #0f0; font-family: monospace; font-size: 10px; padding: 3px 10px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo-area">
-            <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
-            <div><h1>🌙 OK Safe Parking</h1></div>
-        </div>
-        <div class="user-area">
-            <span id="usernameSpan" class="username-display">...</span>
-            <button id="changeNameBtn" class="change-name-btn">Edit Name</button>
-            <button id="adminToggleBtn" class="admin-btn">🔐 Admin</button>
-            <button id="exportCsvBtn" class="export-btn">📎 CSV</button>
-        </div>
+        <h1>🌙 OK Safe Parking Network</h1>
+        <div id="stat-pill" style="font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 15px;">Loading...</div>
     </div>
     
     <div class="map-container"><div id="map"></div></div>
     
     <div class="add-spot-bar">
-        <input type="text" id="newSpotName" placeholder="Business Name">
-        <input type="text" id="newSpotDesc" placeholder="Address/Details">
-        <button id="addSpotBtn">➕ Suggest Spot</button>
+        <input type="text" id="newSpotName" placeholder="Business Name" style="flex:1; border-radius:20px; border:1px solid #ccc; padding:8px;">
+        <button onclick="suggestSpot()" style="background:#2c5e2e; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer;">➕ Suggest Spot</button>
     </div>
-    
-    <div id="adminPanel" class="admin-panel"><div id="pendingList"></div></div>
-    <div class="warning">⚠️ Community Sourced - Check signs locally.</div>
+    <div id="debug-log" class="debug-bar">Checking files...</div>
 </div>
 
 <script src="locations/walmart.js"></script>
@@ -69,159 +43,85 @@
 <script src="locations/restareas.js"></script>
 
 <script>
-    let currentUsername = "";
     let map, markers = [];
-    let allLocations = [];
-    let pendingSpotLatLng = null;
-    let isAdminMode = false;
-    let localData = { votes: {}, comments: {}, approvedSpots: [], pendingSpots: [] };
 
-    // HIGH CONTRAST SOLID COLORS
-    const categoryColors = {
-        "walmart": "#0071ce",         // Blue
-        "loves": "#e21e26",           // Red
-        "cracker barrel": "#5e3a24",  // Brown
-        "pilot": "#ff8200",           // Orange
-        "casino": "#7b1fa2",          // Purple
-        "hospital": "#00bcd4",        // Cyan (Distinct from Walmart Blue)
-        "gym": "#455a64",             // Slate Gray
-        "rest area": "#2e7d32",       // Dark Green
-        "community spot": "#000000"   // Black
+    // SIMPLE COLOR GROUPING
+    const colors = {
+        "gas_station": "#e21e26", // Red for Loves, Pilot, etc.
+        "walmart": "#0071ce",     // Blue
+        "food": "#5e3a24",        // Brown
+        "casino": "#7b1fa2",      // Purple
+        "medical": "#00bcd4",     // Cyan
+        "gym": "#455a64",         // Gray
+        "rest": "#2e7d32",        // Green
+        "default": "#000000"      // Black
     };
 
-    function loadLocalData() {
-        const stored = localStorage.getItem("ok_parking_data");
-        if (stored) try { localData = JSON.parse(stored); } catch(e) {}
-        if (!localData.votes) localData.votes = {};
-        if (!localData.comments) localData.comments = {};
-        if (!localData.approvedSpots) localData.approvedSpots = [];
-        if (!localData.pendingSpots) localData.pendingSpots = [];
-    }
-
-    function saveLocalData() { localStorage.setItem("ok_parking_data", JSON.stringify(localData)); }
-
-    function combineAllLocations() {
-        let combined = [];
-        if (typeof walmartLocations !== 'undefined') combined.push(...walmartLocations);
-        if (typeof crackerBarrelLocations !== 'undefined') combined.push(...crackerBarrelLocations);
-        if (typeof lovesLocations !== 'undefined') combined.push(...lovesLocations);
-        if (typeof pilotLocations !== 'undefined') combined.push(...pilotLocations);
-        if (typeof casinoLocations !== 'undefined') combined.push(...casinoLocations);
-        if (typeof hospitalLocations !== 'undefined') combined.push(...hospitalLocations);
-        if (typeof gymLocations !== 'undefined') combined.push(...gymLocations);
-        if (typeof restAreaLocations !== 'undefined') combined.push(...restAreaLocations);
-        localData.approvedSpots.forEach(s => combined.push({...s, category: s.category || "community spot"}));
-        return combined.map(loc => ({ ...loc, id: loc.id || `${loc.lat}_${loc.lng}` }));
-    }
-
-    function createMarkerIcon(category) {
-        const lookup = String(category).toLowerCase();
-        const color = categoryColors[lookup] || "#666"; 
-        
-        return L.divIcon({
-            html: `<div style="
-                background-color: ${color}; 
-                width: 18px; 
-                height: 18px; 
-                border-radius: 50%; 
-                border: 2px solid white; 
-                box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-            </div>`,
-            iconSize: [18, 18],
-            popupAnchor: [0, -9]
-        });
-    }
-
-    function generatePopupHtml(loc) {
-        const votes = localData.votes[loc.id] || { yes: 0, no: 0 };
-        const comments = localData.comments[loc.id] || [];
-        const status = votes.yes > votes.no ? "✅ Safe" : (votes.no > votes.yes ? "⚠️ Risky" : "❔ Unknown");
-        
-        return `
-            <div style="min-width: 200px;">
-                <b>${loc.name}</b> [${status}]<br>
-                <small>${loc.category}</small>
-                <div style="margin: 10px 0; display: flex; gap: 10px;">
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'yes')">👍 ${votes.yes}</button>
-                    <button class="vote-btn" onclick="window.vote('${loc.id}', 'no')">👎 ${votes.no}</button>
-                </div>
-                <div class="popup-comments">${comments.length ? comments.slice(-3).map(c => `<div>- ${c.text}</div>`).join('') : 'No notes.'}</div>
-                <input type="text" id="in-${loc.id}" placeholder="Add note..." style="width:70%; margin-top:5px;">
-                <button onclick="window.addComment('${loc.id}')">Go</button>
-            </div>`;
-    }
-
-    function rebuildMarkers() {
-        if (!map) return;
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
-        allLocations = combineAllLocations();
-
-        allLocations.forEach(loc => {
-            const jitter = (Math.random() - 0.5) * 0.0002; // Prevents stacking
-            const marker = L.marker([loc.lat + jitter, loc.lng + jitter], { 
-                icon: createMarkerIcon(loc.category) 
-            }).addTo(map);
-            marker.id = loc.id;
-            marker.bindPopup(generatePopupHtml(loc));
-            markers.push(marker);
-        });
-    }
-
-    window.vote = function(id, type) {
-        if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 };
-        localData.votes[id][type]++;
-        saveLocalData();
-        refreshPopup(id);
-    };
-
-    window.addComment = function(id) {
-        const val = document.getElementById(`in-${id}`).value.trim();
-        if (!val) return;
-        if (!localData.comments[id]) localData.comments[id] = [];
-        localData.comments[id].push({ text: val });
-        saveLocalData();
-        refreshPopup(id);
-    };
-
-    function refreshPopup(id) {
-        const loc = allLocations.find(l => l.id === id);
-        const marker = markers.find(m => m.id === id);
-        if (marker && loc) marker.setPopupContent(generatePopupHtml(loc));
-    }
-
-    function init() {
-        loadLocalData();
-        const storedName = localStorage.getItem("ok_username");
-        currentUsername = storedName || "Wanderer" + Math.floor(Math.random()*999);
-        document.getElementById("usernameSpan").innerText = currentUsername;
-
+    function initMap() {
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-        
-        map.on('click', (e) => {
-            pendingSpotLatLng = e.latlng;
-            L.popup().setLatLng(e.latlng).setContent("📍 Click 'Suggest Spot' to add this location.").openOn(map);
-        });
-
-        rebuildMarkers();
-
-        document.getElementById("addSpotBtn").onclick = () => {
-            if (!pendingSpotLatLng) return alert("Tap map first");
-            const name = document.getElementById("newSpotName").value;
-            localData.pendingSpots.push({ name, lat: pendingSpotLatLng.lat, lng: pendingSpotLatLng.lng });
-            saveLocalData();
-            alert("Suggested!");
-        };
-
-        document.getElementById("adminToggleBtn").onclick = () => {
-            if (prompt("Pass:") === "okcadmin2025") {
-                isAdminMode = true;
-                document.getElementById("adminPanel").style.display = "block";
-            }
-        };
+        renderAllMarkers();
     }
-    init();
+
+    function renderAllMarkers() {
+        let allData = [];
+        let status = "";
+
+        // 1. Recognize the files by their correct variable names
+        if (typeof walmartLocations !== 'undefined') { 
+            walmartLocations.forEach(l => allData.push({...l, dotColor: colors.walmart}));
+            status += "Walmart ✅ ";
+        }
+        if (typeof lovesLocations !== 'undefined') { 
+            // Paint Loves the Gas Station color
+            lovesLocations.forEach(l => allData.push({...l, dotColor: colors.gas_station}));
+            status += "Loves ✅ ";
+        }
+        if (typeof pilotLocations !== 'undefined') { 
+            // Paint Pilots the Gas Station color
+            pilotLocations.forEach(l => allData.push({...l, dotColor: colors.gas_station}));
+            status += "Pilot ✅ ";
+        }
+        if (typeof crackerBarrelLocations !== 'undefined') { 
+            crackerBarrelLocations.forEach(l => allData.push({...l, dotColor: colors.food}));
+            status += "CB ✅ ";
+        }
+        if (typeof casinoLocations !== 'undefined') { 
+            casinoLocations.forEach(l => allData.push({...l, dotColor: colors.casino}));
+            status += "Casino ✅ ";
+        }
+        if (typeof hospitalLocations !== 'undefined') { 
+            hospitalLocations.forEach(l => allData.push({...l, dotColor: colors.medical}));
+            status += "Hosp ✅ ";
+        }
+        if (typeof gymLocations !== 'undefined') { 
+            gymLocations.forEach(l => allData.push({...l, dotColor: colors.gym}));
+            status += "Gym ✅ ";
+        }
+        if (typeof restAreaLocations !== 'undefined') { 
+            restAreaLocations.forEach(l => allData.push({...l, dotColor: colors.rest}));
+            status += "Rest ✅ ";
+        }
+
+        document.getElementById('debug-log').innerText = status;
+        document.getElementById('stat-pill').innerText = allData.length + " Locations Found";
+
+        allData.forEach(loc => {
+            const jitter = (Math.random() - 0.5) * 0.0004;
+            const marker = L.marker([loc.lat + jitter, loc.lng + jitter], {
+                icon: L.divIcon({
+                    html: `<div style="background:${loc.dotColor}; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                    className: '', iconSize: [16,16], iconAnchor: [8,8]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`<b>${loc.name}</b><br>${loc.city || ''}`);
+        });
+    }
+
+    function suggestSpot() { alert("Pin set! Suggestion logic goes here."); }
+
+    window.onload = initMap;
 </script>
 </body>
 </html>
