@@ -140,7 +140,6 @@
     };
     const brandColors = { "gas": "#e21e26", "walmart": "#0071ce", "food": "#ffc107", "casino": "#7b1fa2", "med": "#00bcd4", "gym": "#f38d00", "rest": "#2e7d32" };
 
-    // This must stay at the top to be found by the button
     window.closeModal = function() { 
         document.getElementById('welcomeOverlay').style.display = 'none'; 
     };
@@ -175,8 +174,6 @@
         
         map.on('click', (e) => {
             window.lastClick = { lat: e.latlng.lat, lng: e.latlng.lng };
-            L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Location set. You can now suggest a spot.</span>").openOn(map);
-            setTimeout(() => map.closePopup(), 1500);
         });
 
         try {
@@ -214,67 +211,19 @@
             }).addTo(map);
 
             marker.bindPopup(`
-                <div style="min-width:200px;">
-                    <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-    <button class="vote-btn btn-safe" onclick="vote('${loc.id}','yes')">
-        <img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true" style="width:30px; height:30px; margin-bottom:4px;"> 
-        SAFE (${v.yes})
-    </button>
-
-    <button class="vote-btn btn-risky" onclick="vote('${loc.id}','no')">
-        <img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true" style="width:30px; height:30px; margin-bottom:4px;"> 
-        RISKY (${v.no})
-    </button>
-</div>
+                <div style="min-width:200px; text-align:center;">
+                    <strong style="color:#d4c4a8; font-size:1.1rem; display:block; margin-bottom:8px;">${loc.name}</strong>
+                    <div style="display:flex; gap:8px; justify-content:center;">
+                        <button class="vote-btn btn-safe" onclick="vote('${loc.id}','yes')" style="flex-direction:column; padding:10px 5px;">
+                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true" style="width:30px; height:30px;"> 
+                            <span style="font-size:0.7rem;">SAFE (${v.yes})</span>
+                        </button>
+                        <button class="vote-btn btn-risky" onclick="vote('${loc.id}','no')" style="flex-direction:column; padding:10px 5px;">
+                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true" style="width:30px; height:30px;"> 
+                            <span style="font-size:0.7rem;">RISKY (${v.no})</span>
+                        </button>
                     </div>
-                    <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
-                        ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
-                    </div>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="n-${loc.id}" placeholder="Note..." style="flex:1; background:#0b140e; border:1px solid #3e6b40; color:white; font-size:11px; padding:4px;">
-                        <button onclick="submitNoteForReview('${loc.id}', '${loc.name.replace(/'/g, "\\'")}')" style="background:#d4c4a8; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">ADD</button>
-                    </div>
-                </div>
-            `);
-            marker.name = loc.name.toLowerCase();
-            marker.type = loc.type;
-            markers.push(marker);
-        });
-        document.getElementById('stat-pill').innerText = all.length + " SPOTS ONLINE";
-    }
-
-    function render() {
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
-        let all = [];
-
-        if (typeof walmartLocations !== 'undefined') walmartLocations.forEach(l => all.push({...l, c: brandColors.walmart, id: 'w_'+l.lat, type: 'walmart'}));
-        if (typeof lovesLocations !== 'undefined') lovesLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'l_'+l.lat, type: 'gas'}));
-        if (typeof pilotLocations !== 'undefined') pilotLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'p_'+l.lat, type: 'gas'}));
-        if (typeof crackerBarrelLocations !== 'undefined') crackerBarrelLocations.forEach(l => all.push({...l, c: brandColors.food, id: 'cb_'+l.lat, type: 'cracker barrel'}));
-        if (typeof casinoLocations !== 'undefined') casinoLocations.forEach(l => all.push({...l, c: brandColors.casino, id: 'cas_'+l.lat, type: 'casino'}));
-        if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat, type: 'hospital'}));
-        if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat, type: 'gym'}));
-        if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat, type: 'rest area'}));
-        
-        if (localData.approvedLocs) localData.approvedLocs.forEach(l => all.push({...l, c: '#d4c4a8', id: 'u_'+l.lat, type: 'user'}));
-
-        all.forEach(loc => {
-            const v = localData.votes[loc.id] || { yes: 0, no: 0 };
-            const comms = localData.comments[loc.id] || [];
-            const marker = L.marker([loc.lat, loc.lng], {
-                icon: L.divIcon({ html: `<div style="background:${loc.c}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`, className: '', iconSize: [16,16] })
-            }).addTo(map);
-
-            marker.bindPopup(`
-                <div style="min-width:200px;">
-                    <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
-                    <div style="display:flex; gap:5px; margin-top:8px;">
-                        <button class="vote-btn" onclick="vote('${loc.id}','yes')"><img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true"> SAFE (${v.yes})</button>
-                        <button class="vote-btn" onclick="vote('${loc.id}','no')"><img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true"> RISKY (${v.no})</button>
-                    </div>
-                    <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
+                    <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd; text-align:left;">
                         ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
                     </div>
                     <div style="display:flex; gap:5px;">
@@ -332,11 +281,9 @@
 
     window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
 
-    // FIXED: suggestSpot works WITHOUT requiring a map click
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
         if (!name) return alert("Please type a business name first!");
-        
         let lat, lng;
         if (window.lastClick && window.lastClick.lat) {
             lat = window.lastClick.lat;
@@ -346,7 +293,6 @@
             lat = center.lat;
             lng = center.lng;
         }
-        
         localData.pending.push({ name, lat: lat.toFixed(5), lng: lng.toFixed(5), user: localData.userName });
         save(); 
         alert("Suggestion submitted for review!");
