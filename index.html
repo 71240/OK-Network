@@ -49,6 +49,8 @@
         .leaflet-popup-content-wrapper { background: #1a2a1f; color: white; border: 1px solid #d4c4a8; }
         .vote-btn { cursor: pointer; border: 1px solid #3e6b40; background: #2c5e2e; color: white; padding: 6px; border-radius: 6px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .vote-btn img { width: 16px; height: 16px; }
+        .btn-safe { background: #28a745; }   /* Vivid Green */
+.btn-risky { background: #dc3545; }  /* Bright Red */
     </style>
 </head>
 <body>
@@ -214,15 +216,17 @@
             marker.bindPopup(`
                 <div style="min-width:200px;">
                     <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
-                    <div style="display:flex; gap:5px; margin-top:8px;">
-                        <button class="vote-btn" onclick="vote('${loc.id}','yes')">
-                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true" style="width:16px; height:16px;"> 
-                            SAFE (${v.yes})
-                        </button>
-                        <button class="vote-btn" onclick="vote('${loc.id}','no')">
-                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true" style="width:16px; height:16px;"> 
-                            RISKY (${v.no})
-                        </button>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+    <button class="vote-btn btn-safe" onclick="vote('${loc.id}','yes')">
+        <img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true" style="width:30px; height:30px; margin-bottom:4px;"> 
+        SAFE (${v.yes})
+    </button>
+
+    <button class="vote-btn btn-risky" onclick="vote('${loc.id}','no')">
+        <img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true" style="width:30px; height:30px; margin-bottom:4px;"> 
+        RISKY (${v.no})
+    </button>
+</div>
                     </div>
                     <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
                         ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
