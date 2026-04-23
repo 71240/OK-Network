@@ -122,7 +122,7 @@
 <script src="locations/gyms.js"></script>
 <script src="locations/restareas.js"></script>
 
-<script>
+    <script>
     const BIN_ID = '69e921d136566621a8df20c8';
     const API_KEY = '$2a$10$tH.4dVKocW0lJCSgG0AH8e6bPyuVgRxROY2rk4NJIw/1b59ohi622';
     const CLOUD_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -138,7 +138,10 @@
     };
     const brandColors = { "gas": "#e21e26", "walmart": "#0071ce", "food": "#ffc107", "casino": "#7b1fa2", "med": "#00bcd4", "gym": "#f38d00", "rest": "#2e7d32" };
 
-    function closeModal() { document.getElementById('welcomeOverlay').style.display = 'none'; }
+    // This must stay at the top to be found by the button
+    window.closeModal = function() { 
+        document.getElementById('welcomeOverlay').style.display = 'none'; 
+    };
 
     function generateName() {
         const adjs = ["Gritty", "Rusty", "Nomadic", "Scrappy", "Worn", "Dustcaked", "Roadworn", "Tattered", "Grimy", "Asphalt", "Neonlit", "Backalley", "Drifter", "Vagrant", "Rebel", "Unruly", "Hollow", "Burnt", "Smudged", "Greasebound", "Cracked", "Feral", "Rogue", "Wayward", "Loose", "Static", "Midnight", "Concrete", "Stained", "Ragged", "Threadbare", "Scorched", "Hustling", "Lowlife", "Barebones", "Salvaged", "Thrown", "Unwashed", "Cinderstained", "Broken", "Transient", "Nocturnal", "Offgrid", "Rattletrap", "Deadbeat", "Streetwise", "Unfiltered", "Hardluck", "Dustbitten", "Unsettled", "Wanderlust", "Sunbleached", "Roadbound", "Freewheeling", "Drifting", "Openroad", "Highwayborn", "Roaming", "Untethered", "Boundless", "Horizonchasing", "Slowliving", "Goldenhour", "Starlit", "Campfirelit", "Trailworn", "Dustkissed", "Windworn", "Earthy", "Wildrooted", "Skybound", "Evermoving", "Backroad", "Overland", "Ridgebound", "Coastbound", "Wayfaring", "Freeform", "Sunsetfaded", "Daybreak", "Moonlit", "Driftwood", "Canyonbound", "Forestbound", "Openair", "Solstice", "Fireside", "Wavelost", "Outrider", "Longhaul", "Vista", "Trailblaze", "Roamfree", "Seeker", "Unmapped", "Westward", "Northbound", "Southbound"];
@@ -168,7 +171,6 @@
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(map);
         
-        // Optional: still allow click to set exact spot, but not required for suggest
         map.on('click', (e) => {
             window.lastClick = { lat: e.latlng.lat, lng: e.latlng.lng };
             L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Location set. You can now suggest a spot.</span>").openOn(map);
@@ -184,6 +186,58 @@
             console.error("Cloud Load Failed", e); 
             render();
         }
+    }
+
+    function render() {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        let all = [];
+
+        if (typeof walmartLocations !== 'undefined') walmartLocations.forEach(l => all.push({...l, c: brandColors.walmart, id: 'w_'+l.lat, type: 'walmart'}));
+        if (typeof lovesLocations !== 'undefined') lovesLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'l_'+l.lat, type: 'gas'}));
+        if (typeof pilotLocations !== 'undefined') pilotLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'p_'+l.lat, type: 'gas'}));
+        if (typeof crackerBarrelLocations !== 'undefined') crackerBarrelLocations.forEach(l => all.push({...l, c: brandColors.food, id: 'cb_'+l.lat, type: 'cracker barrel'}));
+        if (typeof casinoLocations !== 'undefined') casinoLocations.forEach(l => all.push({...l, c: brandColors.casino, id: 'cas_'+l.lat, type: 'casino'}));
+        if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat, type: 'hospital'}));
+        if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat, type: 'gym'}));
+        if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat, type: 'rest area'}));
+        
+        if (localData.approvedLocs) localData.approvedLocs.forEach(l => all.push({...l, c: '#d4c4a8', id: 'u_'+l.lat, type: 'user'}));
+
+        all.forEach(loc => {
+            const v = localData.votes[loc.id] || { yes: 0, no: 0 };
+            const comms = localData.comments[loc.id] || [];
+            const marker = L.marker([loc.lat, loc.lng], {
+                icon: L.divIcon({ html: `<div style="background:${loc.c}; width:16px; height:16px; border-radius:50%; border:2px solid #fff;"></div>`, className: '', iconSize: [16,16] })
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="min-width:200px;">
+                    <strong style="color:#d4c4a8; font-size:1.1rem;">${loc.name}</strong><br>
+                    <div style="display:flex; gap:5px; margin-top:8px;">
+                        <button class="vote-btn" onclick="vote('${loc.id}','yes')">
+                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsUp.png?raw=true" style="width:16px; height:16px;"> 
+                            SAFE (${v.yes})
+                        </button>
+                        <button class="vote-btn" onclick="vote('${loc.id}','no')">
+                            <img src="https://github.com/71240/OK-Network/blob/main/ThumbsDown.png?raw=true" style="width:16px; height:16px;"> 
+                            RISKY (${v.no})
+                        </button>
+                    </div>
+                    <div style="max-height:80px; overflow-y:auto; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:8px; margin:8px 0; border-radius:4px; color:#ddd;">
+                        ${comms.map(c => `• ${c}<br>`).join('') || 'No approved traveler notes.'}
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="n-${loc.id}" placeholder="Note..." style="flex:1; background:#0b140e; border:1px solid #3e6b40; color:white; font-size:11px; padding:4px;">
+                        <button onclick="submitNoteForReview('${loc.id}', '${loc.name.replace(/'/g, "\\'")}')" style="background:#d4c4a8; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">ADD</button>
+                    </div>
+                </div>
+            `);
+            marker.name = loc.name.toLowerCase();
+            marker.type = loc.type;
+            markers.push(marker);
+        });
+        document.getElementById('stat-pill').innerText = all.length + " SPOTS ONLINE";
     }
 
     function render() {
