@@ -4,33 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>OK Safe Parking Network</title>
+    <link rel="icon" href="Favicon.png" type="image/png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { margin: 0; padding: 15px; background: #1a2a1f; display: flex; justify-content: center; }
-        .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 20px; overflow: hidden; border: 2px solid #2c5e2e; }
-        .header { background: #2c5e2e; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .map-container { height: calc(100vh - 180px); width: 100%; }
+        .container { max-width: 1400px; width: 100%; background: #f5f3e8; border-radius: 20px; overflow: hidden; border: 2px solid #2c5e2e; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .header { background: #2c5e2e; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-img { height: 40px; width: auto; }
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; }
+        .user-pill { background: #1f3b20; padding: 5px 15px; border-radius: 40px; display: flex; align-items: center; gap: 10px; font-size: 0.8rem; border: 1px solid #3e6b40; }
+        .name-display { color: #e9b35f; font-weight: bold; }
+        .search-box { padding: 8px 15px; border-radius: 20px; border: none; width: 200px; font-size: 0.85rem; }
+        .map-container { height: calc(100vh - 220px); width: 100%; position: relative; }
         #map { height: 100%; width: 100%; background: #c8e0d0; }
-        .add-spot-bar { background: #e8f0fe; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ccc; }
-        .debug-bar { background: #333; color: #0f0; font-family: monospace; font-size: 10px; padding: 3px 10px; }
+        .admin-panel { background: #fff1d6; padding: 15px; border-top: 2px solid #e0b354; display: none; }
+        .vote-bar { display: flex; gap: 8px; margin: 10px 0; border-top: 1px solid #ddd; padding-top: 10px; }
+        .vote-btn { cursor: pointer; border: 1px solid #ccc; background: white; padding: 5px; border-radius: 4px; flex: 1; font-weight: bold; font-size: 0.75rem; }
+        .comment-box { max-height: 80px; overflow-y: auto; font-size: 0.8rem; background: #eee; padding: 5px; margin: 5px 0; border-radius: 4px; border: 1px solid #ddd; }
+        .footer-bar { background: #e8f0fe; padding: 12px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ccc; }
+        .footer-bar input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; flex: 1; }
+        button { cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🌙 OK Safe Parking Network</h1>
-        <div id="stat-pill" style="font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 15px;">Loading...</div>
+        <div class="logo-area">
+            <img src="logo.png" alt="Logo" class="logo-img">
+            <h1>OK Safe Parking</h1>
+        </div>
+        <div class="user-pill">
+            <span id="userName" class="name-display">...</span>
+            <button onclick="changeName()" style="background:#e9b35f; border:none; padding:2px 8px; border-radius:10px; font-size:0.7rem;">EDIT</button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="mapSearch" class="search-box" placeholder="Search..." onkeyup="searchMap()">
+            <button onclick="toggleAdmin()" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:4px; font-size:0.7rem;">ADMIN</button>
+        </div>
     </div>
-    
+
     <div class="map-container"><div id="map"></div></div>
-    
-    <div class="add-spot-bar">
-        <input type="text" id="newSpotName" placeholder="Business Name" style="flex:1; border-radius:20px; border:1px solid #ccc; padding:8px;">
-        <button onclick="suggestSpot()" style="background:#2c5e2e; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer;">➕ Suggest Spot</button>
+
+    <div id="adminPanel" class="admin-panel">
+        <strong>Pending Approvals</strong>
+        <div id="pendingList"></div>
     </div>
-    <div id="debug-log" class="debug-bar">Checking files...</div>
+
+    <div class="footer-bar">
+        <input type="text" id="newSpotName" placeholder="Business Name">
+        <button onclick="suggestSpot()" style="background:#2c5e2e; color:white; border:none; padding:8px 20px; border-radius:4px;">SUGGEST SPOT</button>
+        <div id="stat-pill" style="font-size: 0.7rem; font-weight: bold; color: #2c5e2e; margin-left: auto;"></div>
+    </div>
 </div>
 
 <script src="locations/walmart.js"></script>
@@ -44,82 +71,123 @@
 
 <script>
     let map, markers = [];
+    let localData = { votes: {}, comments: {}, pending: [], userName: "" };
+    const brandColors = { "gas": "#e21e26", "walmart": "#0071ce", "food": "#5e3a24", "casino": "#7b1fa2", "med": "#00bcd4", "gym": "#455a64", "rest": "#2e7d32" };
 
-    // SIMPLE COLOR GROUPING
-    const colors = {
-        "gas_station": "#e21e26", // Red for Loves, Pilot, etc.
-        "walmart": "#0071ce",     // Blue
-        "food": "#5e3a24",        // Brown
-        "casino": "#7b1fa2",      // Purple
-        "medical": "#00bcd4",     // Cyan
-        "gym": "#455a64",         // Gray
-        "rest": "#2e7d32",        // Green
-        "default": "#000000"      // Black
-    };
+    function generateName() {
+        const adjs = ["Silent", "Wild", "Brave", "Dusty", "Swift", "Calm", "Golden", "Red", "Lone", "Happy", "Steady", "Misty"];
+        const nouns = ["Traveler", "Nomad", "Wanderer", "Explorer", "Driver", "Camper", "Ranger", "Pathfinder", "Scout", "Voyager"];
+        return adjs[Math.floor(Math.random()*adjs.length)] + " " + nouns[Math.floor(Math.random()*nouns.length)];
+    }
 
     function initMap() {
+        const stored = localStorage.getItem("ok_safe_parking_final_v1");
+        if (stored) {
+            localData = JSON.parse(stored);
+        } else {
+            localData.userName = generateName();
+            save();
+        }
+        document.getElementById("userName").innerText = localData.userName;
+        
         map = L.map('map').setView([35.5, -97.2], 7);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-        renderAllMarkers();
-    }
 
-    function renderAllMarkers() {
-        let allData = [];
-        let status = "";
-
-        // 1. Recognize the files by their correct variable names
-        if (typeof walmartLocations !== 'undefined') { 
-            walmartLocations.forEach(l => allData.push({...l, dotColor: colors.walmart}));
-            status += "Walmart ✅ ";
-        }
-        if (typeof lovesLocations !== 'undefined') { 
-            // Paint Loves the Gas Station color
-            lovesLocations.forEach(l => allData.push({...l, dotColor: colors.gas_station}));
-            status += "Loves ✅ ";
-        }
-        if (typeof pilotLocations !== 'undefined') { 
-            // Paint Pilots the Gas Station color
-            pilotLocations.forEach(l => allData.push({...l, dotColor: colors.gas_station}));
-            status += "Pilot ✅ ";
-        }
-        if (typeof crackerBarrelLocations !== 'undefined') { 
-            crackerBarrelLocations.forEach(l => allData.push({...l, dotColor: colors.food}));
-            status += "CB ✅ ";
-        }
-        if (typeof casinoLocations !== 'undefined') { 
-            casinoLocations.forEach(l => allData.push({...l, dotColor: colors.casino}));
-            status += "Casino ✅ ";
-        }
-        if (typeof hospitalLocations !== 'undefined') { 
-            hospitalLocations.forEach(l => allData.push({...l, dotColor: colors.medical}));
-            status += "Hosp ✅ ";
-        }
-        if (typeof gymLocations !== 'undefined') { 
-            gymLocations.forEach(l => allData.push({...l, dotColor: colors.gym}));
-            status += "Gym ✅ ";
-        }
-        if (typeof restAreaLocations !== 'undefined') { 
-            restAreaLocations.forEach(l => allData.push({...l, dotColor: colors.rest}));
-            status += "Rest ✅ ";
-        }
-
-        document.getElementById('debug-log').innerText = status;
-        document.getElementById('stat-pill').innerText = allData.length + " Locations Found";
-
-        allData.forEach(loc => {
-            const jitter = (Math.random() - 0.5) * 0.0004;
-            const marker = L.marker([loc.lat + jitter, loc.lng + jitter], {
-                icon: L.divIcon({
-                    html: `<div style="background:${loc.dotColor}; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                    className: '', iconSize: [16,16], iconAnchor: [8,8]
-                })
-            }).addTo(map);
-            
-            marker.bindPopup(`<b>${loc.name}</b><br>${loc.city || ''}`);
+        map.on('click', (e) => {
+            window.lastClick = e.latlng;
+            L.popup().setLatLng(e.latlng).setContent("Location selected. Enter name in footer.").openOn(map);
         });
+
+        render();
     }
 
-    function suggestSpot() { alert("Pin set! Suggestion logic goes here."); }
+    function changeName() {
+        const n = prompt("Change display name:", localData.userName);
+        if (n) { localData.userName = n; document.getElementById("userName").innerText = n; save(); }
+    }
+
+    function save() { localStorage.setItem("ok_safe_parking_final_v1", JSON.stringify(localData)); }
+
+    function render() {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        let all = [];
+
+        // Loading and direct color mapping
+        if (typeof walmartLocations !== 'undefined') walmartLocations.forEach(l => all.push({...l, c: brandColors.walmart, id: 'w_'+l.lat}));
+        if (typeof lovesLocations !== 'undefined') lovesLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'l_'+l.lat}));
+        if (typeof pilotLocations !== 'undefined') pilotLocations.forEach(l => all.push({...l, c: brandColors.gas, id: 'p_'+l.lat}));
+        if (typeof crackerBarrelLocations !== 'undefined') crackerBarrelLocations.forEach(l => all.push({...l, c: brandColors.food, id: 'cb_'+l.lat}));
+        if (typeof casinoLocations !== 'undefined') casinoLocations.forEach(l => all.push({...l, c: brandColors.casino, id: 'cas_'+l.lat}));
+        if (typeof hospitalLocations !== 'undefined') hospitalLocations.forEach(l => all.push({...l, c: brandColors.med, id: 'h_'+l.lat}));
+        if (typeof gymLocations !== 'undefined') gymLocations.forEach(l => all.push({...l, c: brandColors.gym, id: 'g_'+l.lat}));
+        if (typeof restAreaLocations !== 'undefined') restAreaLocations.forEach(l => all.push({...l, c: brandColors.rest, id: 'r_'+l.lat}));
+
+        all.forEach(loc => {
+            const v = localData.votes[loc.id] || { yes: 0, no: 0 };
+            const comms = localData.comments[loc.id] || [];
+            const marker = L.marker([loc.lat, loc.lng], {
+                icon: L.divIcon({ html: `<div style="background:${loc.c}; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.4);"></div>`, className: '', iconSize: [16,16] })
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="min-width:180px;">
+                    <strong>${loc.name}</strong><br><small>${loc.city || ''}</small>
+                    <div class="vote-bar">
+                        <button class="vote-btn" onclick="vote('${loc.id}','yes')">SAFE (${v.yes})</button>
+                        <button class="vote-btn" onclick="vote('${loc.id}','no')">RISKY (${v.no})</button>
+                    </div>
+                    <div class="comment-box">${comms.map(c => `• ${c}<br>`).join('') || 'No traveler notes.'}</div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="n-${loc.id}" placeholder="Add note..." style="flex:1; font-size:10px; padding:2px;">
+                        <button onclick="addComment('${loc.id}')" style="font-size:10px;">ADD</button>
+                    </div>
+                </div>
+            `);
+            marker.name = loc.name.toLowerCase();
+            marker.city = (loc.city || "").toLowerCase();
+            markers.push(marker);
+        });
+        document.getElementById('stat-pill').innerText = all.length + " SPOTS ONLINE";
+    }
+
+    window.vote = (id, type) => {
+        if (!localData.votes[id]) localData.votes[id] = { yes: 0, no: 0 };
+        localData.votes[id][type]++;
+        save(); render();
+    };
+
+    window.addComment = (id) => {
+        const v = document.getElementById(`n-${id}`).value;
+        if (!v) return;
+        if (!localData.comments[id]) localData.comments[id] = [];
+        localData.comments[id].push(`${localData.userName}: ${v}`);
+        save(); render();
+    };
+
+    window.suggestSpot = () => {
+        const name = document.getElementById("newSpotName").value;
+        if (!name || !window.lastClick) return alert("Select map location and enter name.");
+        localData.pending.push({ name, lat: window.lastClick.lat, lng: window.lastClick.lng, user: localData.userName });
+        save();
+        alert("Suggestion saved for review.");
+        if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
+    };
+
+    window.toggleAdmin = () => { if (prompt("Key:") === "okcadmin2025") { document.getElementById("adminPanel").style.display = "block"; renderAdmin(); } };
+
+    function renderAdmin() {
+        document.getElementById("pendingList").innerHTML = localData.pending.map((p, i) => `
+            <div style="background:white; padding:8px; margin-top:5px; border:1px solid #ccc; font-size:0.8rem;">
+                ${p.name} (By: ${p.user}) | <button onclick="localData.pending.splice(${i},1); save(); renderAdmin();">CLEAR</button>
+            </div>
+        `).join('') || "No pending entries.";
+    }
+
+    window.searchMap = () => {
+        const q = document.getElementById("mapSearch").value.toLowerCase();
+        markers.forEach(m => { (m.name.includes(q) || m.city.includes(q)) ? m.addTo(map) : map.removeLayer(m); });
+    };
 
     window.onload = initMap;
 </script>
