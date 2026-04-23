@@ -152,7 +152,8 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(map);
         
         map.on('click', (e) => {
-            window.lastClick = e.latlng;
+            window.lastClick = { lat: e.latlng.lat, lng: e.latlng.lng };
+            
             L.popup().setLatLng(e.latlng).setContent("<span style='color:#333'>Target Set. Name it below & hit Suggest.</span>").openOn(map);
         });
         render();
@@ -241,7 +242,8 @@
     window.suggestSpot = () => {
         const name = document.getElementById("newSpotName").value;
         if (!name) return alert("Please type a name first!");
-        if (!window.lastClick) return alert("Please click a location on the map first!");
+        if (!window.lastClick || window.lastClick.lat == null || window.lastClick.lng == null)
+    return alert("Please click a location on the map first!");
         
         localData.pending.push({ name, lat: window.lastClick.lat.toFixed(4), lng: window.lastClick.lng.toFixed(4), user: localData.userName });
         save(); 
