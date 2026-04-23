@@ -154,7 +154,7 @@
         try {
             await fetch(CLOUD_URL, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                headers: { 'Content-Type': 'application/json', 'X-Access-Key': API_KEY },
                 body: JSON.stringify(localData)
             });
         } catch (e) { console.error("Cloud Save Failed", e); }
@@ -177,7 +177,7 @@
         });
 
         try {
-            const res = await fetch(`${CLOUD_URL}/latest`, { headers: { 'X-Master-Key': API_KEY } });
+            const res = await fetch(`${CLOUD_URL}/latest`, { headers: { 'X-Access-Key': API_KEY } });
             const cloud = await res.json();
             Object.assign(localData, cloud.record);
             render();
